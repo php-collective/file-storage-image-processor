@@ -14,12 +14,12 @@
 
 declare(strict_types=1);
 
-namespace Phauthentic\Test\TestCase\Processor\Image;
+namespace PhpCollective\Test\TestCase\Processor\Image;
 
 use ArrayIterator;
-use Phauthentic\Infrastructure\Storage\Processor\Image\ImageVariant;
-use Phauthentic\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
-use Phauthentic\Test\TestCase\TestCase;
+use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariant;
+use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
+use PhpCollective\Test\TestCase\TestCase;
 
 /**
  * ImageVariantCollectionTest

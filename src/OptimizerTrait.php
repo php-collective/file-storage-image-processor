@@ -14,7 +14,7 @@
 
 declare(strict_types=1);
 
-namespace Phauthentic\Infrastructure\Storage\Processor\Image;
+namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
 use Spatie\ImageOptimizer\OptimizerChain;
 use Spatie\ImageOptimizer\OptimizerChainFactory;

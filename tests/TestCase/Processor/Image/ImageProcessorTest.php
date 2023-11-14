@@ -14,17 +14,17 @@
 
 declare(strict_types=1);
 
-namespace Phauthentic\Test\TestCase\Processor\Image;
+namespace PhpCollective\Test\TestCase\Processor\Image;
 
 use Intervention\Image\Image;
 use Intervention\Image\ImageManager;
-use Phauthentic\Infrastructure\Storage\File;
-use Phauthentic\Infrastructure\Storage\FileFactory;
-use Phauthentic\Infrastructure\Storage\FileStorageInterface;
-use Phauthentic\Infrastructure\Storage\PathBuilder\PathBuilder;
-use Phauthentic\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
-use Phauthentic\Infrastructure\Storage\Processor\Image\ImageProcessor;
-use Phauthentic\Test\TestCase\TestCase;
+use PhpCollective\Infrastructure\Storage\File;
+use PhpCollective\Infrastructure\Storage\FileFactory;
+use PhpCollective\Infrastructure\Storage\FileStorageInterface;
+use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilder;
+use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
+use PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor;
+use PhpCollective\Test\TestCase\TestCase;
 
 /**
  * ImageProcessorTest

@@ -14,22 +14,22 @@
 
 declare(strict_types=1);
 
-namespace Phauthentic\Infrastructure\Storage\Processor\Image;
+namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
 use GuzzleHttp\Psr7\StreamWrapper;
 use http\Exception\InvalidArgumentException;
 use Intervention\Image\Image;
 use Intervention\Image\ImageManager;
 use League\Flysystem\Config;
-use Phauthentic\Infrastructure\Storage\FileInterface;
-use Phauthentic\Infrastructure\Storage\Processor\Image\Exception\TempFileCreationFailedException;
-use Phauthentic\Infrastructure\Storage\PathBuilder\PathBuilderInterface;
-use Phauthentic\Infrastructure\Storage\FileStorageInterface;
-use Phauthentic\Infrastructure\Storage\Processor\ProcessorInterface;
-use Phauthentic\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface;
-use Phauthentic\Infrastructure\Storage\Utility\TemporaryFile;
+use PhpCollective\Infrastructure\Storage\FileInterface;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\TempFileCreationFailedException;
+use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilderInterface;
+use PhpCollective\Infrastructure\Storage\FileStorageInterface;
+use PhpCollective\Infrastructure\Storage\Processor\ProcessorInterface;
+use PhpCollective\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface;
+use PhpCollective\Infrastructure\Storage\Utility\TemporaryFile;
 
-use function Phauthentic\Infrastructure\Storage\fopen;
+use function PhpCollective\Infrastructure\Storage\fopen;
 
 /**
  * Image Operator
@@ -54,17 +54,17 @@ class ImageProcessor implements ProcessorInterface
     protected array $processOnlyTheseVariants = [];
 
     /**
-     * @var \Phauthentic\Infrastructure\Storage\FileStorageInterface
+     * @var \PhpCollective\Infrastructure\Storage\FileStorageInterface
      */
     protected FileStorageInterface $storageHandler;
 
     /**
-     * @var \Phauthentic\Infrastructure\Storage\PathBuilder\PathBuilderInterface
+     * @var \PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilderInterface
      */
     protected PathBuilderInterface $pathBuilder;
 
     /**
-     * @var \Phauthentic\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface
+     * @var \PhpCollective\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface
      */
     protected ?UrlBuilderInterface $urlBuilder;
 
@@ -86,8 +86,8 @@ class ImageProcessor implements ProcessorInterface
     protected int $quality = 90;
 
     /**
-     * @param \Phauthentic\Infrastructure\Storage\FileStorageInterface $storageHandler File Storage Handler
-     * @param \Phauthentic\Infrastructure\Storage\PathBuilder\PathBuilderInterface $pathBuilder Path Builder
+     * @param \PhpCollective\Infrastructure\Storage\FileStorageInterface $storageHandler File Storage Handler
+     * @param \PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilderInterface $pathBuilder Path Builder
      * @param \Intervention\Image\ImageManager $imageManager Image Manager
      */
     public function __construct(
@@ -132,7 +132,7 @@ class ImageProcessor implements ProcessorInterface
     }
 
     /**
-     * @param \Phauthentic\Infrastructure\Storage\FileInterface $file File
+     * @param \PhpCollective\Infrastructure\Storage\FileInterface $file File
      * @return bool
      */
     protected function isApplicable(FileInterface $file): bool
@@ -167,7 +167,7 @@ class ImageProcessor implements ProcessorInterface
      * if not fetch it from the storage backend and write the data
      * to the stream of the temp file
      *
-     * @param \Phauthentic\Infrastructure\Storage\FileInterface $file File
+     * @param \PhpCollective\Infrastructure\Storage\FileInterface $file File
      * @param resource $tempFileStream Temp File Stream Resource
      * @return int|bool False on error
      */
@@ -276,7 +276,7 @@ class ImageProcessor implements ProcessorInterface
     }
 
     /**
-     * @param \Phauthentic\Infrastructure\Storage\FileInterface $file File
+     * @param \PhpCollective\Infrastructure\Storage\FileInterface $file File
      * @param string $path Path
      * @return void
      */

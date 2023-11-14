@@ -5,7 +5,7 @@ Contributions are welcome. We accept pull requests on [GitHub][].
 You can triage issues which may include reproducing bug reports or asking for
 vital information, such as version numbers or reproduction instructions. If you
 would like to start triaging issues, one easy way to get started is to
-[subscribe to phauthentic/file-storage on CodeTriage](https://codetriage.com/phauthentic/file-storage).
+[subscribe to php-collective/file-storage on CodeTriage](https://codetriage.com/php-collective/file-storage).
 
 This project adheres to a [Contributor Code of Conduct][]. By participating in
 this project and its community, you are expected to uphold this code.
@@ -15,7 +15,7 @@ this project and its community, you are expected to uphold this code.
 
 You can find help and discussion in the following places:
 
-* GitHub Issues: <https://github.com/phauthentic/file-storage/issues>
+* GitHub Issues: <https://github.com/php-collective/file-storage/issues>
 
 
 ## Reporting Bugs

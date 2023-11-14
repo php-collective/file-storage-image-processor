@@ -14,7 +14,7 @@
 
 declare(strict_types=1);
 
-namespace Phauthentic\Infrastructure\Storage\Processor\Image\Exception;
+namespace PhpCollective\Infrastructure\Storage\Processor\Image\Exception;
 
 /**
  * TempFileCreationFailedException

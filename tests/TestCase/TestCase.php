@@ -14,7 +14,7 @@
 
 declare(strict_types=1);
 
-namespace Phauthentic\Test\TestCase;
+namespace PhpCollective\Test\TestCase;
 
 use PHPUnit\Framework\TestCase as PhpUnitTestCase;
 

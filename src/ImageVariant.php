@@ -14,10 +14,10 @@
 
 declare(strict_types=1);
 
-namespace Phauthentic\Infrastructure\Storage\Processor\Image;
+namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
 use InvalidArgumentException;
-use Phauthentic\Infrastructure\Storage\Processor\Variant;
+use PhpCollective\Infrastructure\Storage\Processor\Variant;
 
 /**
  * Image Manipulation

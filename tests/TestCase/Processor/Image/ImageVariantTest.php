@@ -14,10 +14,10 @@
 
 declare(strict_types=1);
 
-namespace Phauthentic\Test\TestCase\Processor\Image;
+namespace PhpCollective\Test\TestCase\Processor\Image;
 
-use Phauthentic\Infrastructure\Storage\Processor\Image\ImageVariant;
-use Phauthentic\Test\TestCase\TestCase;
+use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariant;
+use PhpCollective\Test\TestCase\TestCase;
 
 /**
  * ImageVariantTest

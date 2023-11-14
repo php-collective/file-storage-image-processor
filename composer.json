@@ -1,5 +1,5 @@
 {
-    "name": "phauthentic/file-storage-image-processor",
+    "name": "php-collective/file-storage-image-processor",
     "description": "File Storage Image Processor",
     "keywords": ["storage", "files", "file storage", "file system", "persistence", "media", "image processing", "agnostic"],
     "type": "library",
@@ -17,7 +17,10 @@
         "ext-json": "*"
     },
     "require-dev": {
-        "phauthentic/file-storage": "^1.0",
+        "phpunit/phpunit": "^10.3",
+        "phpstan/phpstan": "^1.10",
+        "php-collective/code-sniffer": "^0.2.1",
+        "php-collective/file-storage": "^1.0",
         "instituteweb/composer-scripts": "^1.1"
     },
     "minimum-stability": "dev",
@@ -29,12 +32,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Phauthentic\\Infrastructure\\Storage\\Processor\\Image\\": "src/"
+            "PhpCollective\\Infrastructure\\Storage\\Processor\\Image\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Phauthentic\\Test\\": "tests/"
+            "PhpCollective\\Test\\": "tests/"
         }
     },
     "scripts": {
@@ -42,25 +45,22 @@
             "php config/composer_post_install.php"
         ],
         "test": [
-            "./bin/phpunit"
+            "phpunit"
         ],
         "test-coverage": [
-            "./bin/phpunit --coverage-text"
+            "phpunit --coverage-text"
         ],
         "test-coverage-html": [
-            "./bin/phpunit --coverage-html ./tmp/coverage"
+            "phpunit --coverage-html ./tmp/coverage"
         ],
-        "cscheck": [
-            "./bin/phpcs ./src ./tests --standard=./phpcs.xml -s"
+        "cs-check": [
+            "phpcs -s"
         ],
-        "csfix": [
-            "./bin/phpcbf ./src ./tests --standard=./phpcs.xml"
+        "cs-fix": [
+            "phpcbf"
         ],
-        "analyze": [
-            "./bin/phpstan analyse ./src"
-        ],
-        "phive": [
-            "php ./config/composer_phive.php"
+        "stan": [
+            "phpstan analyze"
         ],
         "serve": [
 

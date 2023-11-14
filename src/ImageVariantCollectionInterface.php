@@ -14,7 +14,7 @@
 
 declare(strict_types=1);
 
-namespace Phauthentic\Infrastructure\Storage\Processor\Image;
+namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
 use Countable;
 use IteratorAggregate;
@@ -29,12 +29,12 @@ interface ImageVariantCollectionInterface extends JsonSerializable, IteratorAggr
      * Gets a manipulation from the collection
      *
      * @param string $name
-     * @return \Phauthentic\Infrastructure\Storage\Processor\Image\ImageVariant
+     * @return \PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariant
      */
     public function get(string $name): ImageVariant;
 
     /**
-     * @param \Phauthentic\Infrastructure\Storage\Processor\Image\ImageVariant $variant Variant
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariant $variant Variant
      * @return void
      */
     public function add(ImageVariant $variant): void;

@@ -14,11 +14,11 @@
 
 declare(strict_types=1);
 
-namespace Phauthentic\Test\TestCase\Processor\Image;
+namespace PhpCollective\Test\TestCase\Processor\Image;
 
 use Intervention\Image\Image;
-use Phauthentic\Infrastructure\Storage\Processor\Image\Operations;
-use Phauthentic\Test\TestCase\TestCase;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operations;
+use PhpCollective\Test\TestCase\TestCase;
 
 /**
  * OperationsTest

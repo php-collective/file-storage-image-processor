@@ -1,13 +1,13 @@
 # Processing Images
 
 ```php
-use Phauthentic\Infrastructure\Storage\FileFactory;
-use Phauthentic\Infrastructure\Storage\PathBuilder\PathBuilder;
-use Phauthentic\Infrastructure\Storage\Processor\Image\ImageProcessor;
-use Phauthentic\Infrastructure\Storage\Processor\Image\ImageManipulationCollection;
-use Phauthentic\Infrastructure\Storage\FileStorage;
-use Phauthentic\Infrastructure\Storage\StorageAdapterFactory;
-use Phauthentic\Infrastructure\Storage\StorageService;
+use PhpCollective\Infrastructure\Storage\FileFactory;
+use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilder;
+use PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor;
+use PhpCollective\Infrastructure\Storage\Processor\Image\ImageManipulationCollection;
+use PhpCollective\Infrastructure\Storage\FileStorage;
+use PhpCollective\Infrastructure\Storage\StorageAdapterFactory;
+use PhpCollective\Infrastructure\Storage\StorageService;
 use Intervention\Image\ImageManager;
 
 /*******************************************************************************

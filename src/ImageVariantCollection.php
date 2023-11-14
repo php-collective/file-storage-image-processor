@@ -14,12 +14,12 @@
 
 declare(strict_types=1);
 
-namespace Phauthentic\Infrastructure\Storage\Processor\Image;
+namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
 use ArrayIterator;
 use Iterator;
-use Phauthentic\Infrastructure\Storage\Processor\Exception\VariantExistsException;
-use Phauthentic\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOperationException;
+use PhpCollective\Infrastructure\Storage\Processor\Exception\VariantExistsException;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOperationException;
 use ReflectionClass;
 
 /**
@@ -28,7 +28,7 @@ use ReflectionClass;
 class ImageVariantCollection implements ImageVariantCollectionInterface
 {
     /**
-     * @var array<string, \Phauthentic\Infrastructure\Storage\Processor\Image\ImageVariant>
+     * @var array<string, \PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariant>
      */
     protected array $variants = [];
 
@@ -104,7 +104,7 @@ class ImageVariantCollection implements ImageVariantCollectionInterface
 
     /**
      * @param string $name Name
-     * @return \Phauthentic\Infrastructure\Storage\Processor\Image\ImageVariant
+     * @return \PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariant
      */
     public function addNew(string $name)
     {
@@ -117,7 +117,7 @@ class ImageVariantCollection implements ImageVariantCollectionInterface
      * Gets a manipulation from the collection
      *
      * @param string $name
-     * @return \Phauthentic\Infrastructure\Storage\Processor\Image\ImageVariant
+     * @return \PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariant
      */
     public function get(string $name): ImageVariant
     {
@@ -125,7 +125,7 @@ class ImageVariantCollection implements ImageVariantCollectionInterface
     }
 
     /**
-     * @param \Phauthentic\Infrastructure\Storage\Processor\Image\ImageVariant $variant Variant
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariant $variant Variant
      * @return void
      */
     public function add(ImageVariant $variant): void

@@ -14,10 +14,10 @@
 
 declare(strict_types=1);
 
-namespace Phauthentic\Test\TestCase\Processor\Image\Exception;
+namespace PhpCollective\Test\TestCase\Processor\Image\Exception;
 
-use Phauthentic\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOperationException;
-use Phauthentic\Test\TestCase\TestCase;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOperationException;
+use PhpCollective\Test\TestCase\TestCase;
 
 /**
  * UnsupportedOperationExceptionTest

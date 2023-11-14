@@ -14,9 +14,9 @@
 
 declare(strict_types=1);
 
-namespace Phauthentic\Infrastructure\Storage\Processor\Image\Exception;
+namespace PhpCollective\Infrastructure\Storage\Processor\Image\Exception;
 
-use Phauthentic\Infrastructure\Storage\Processor\Exception\VariantException;
+use PhpCollective\Infrastructure\Storage\Processor\Exception\VariantException;
 
 /**
  * ImageProcessingException

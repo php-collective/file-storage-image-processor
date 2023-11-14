@@ -14,11 +14,11 @@
 
 declare(strict_types=1);
 
-namespace Phauthentic\Infrastructure\Storage\Processor\Image;
+namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
 use Intervention\Image\Image;
 use InvalidArgumentException;
-use Phauthentic\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOperationException;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOperationException;
 
 /**
  * Operations

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 require 'vendor/autoload.php';
 
-use Phauthentic\Infrastructure\Storage\Factories\LocalFactory;
-use Phauthentic\Infrastructure\Storage\FileFactory;
-use Phauthentic\Infrastructure\Storage\PathBuilder\PathBuilder;
-use Phauthentic\Infrastructure\Storage\Processor\Image\ImageProcessor;
-use Phauthentic\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
-use Phauthentic\Infrastructure\Storage\FileStorage;
-use Phauthentic\Infrastructure\Storage\StorageAdapterFactory;
-use Phauthentic\Infrastructure\Storage\StorageService;
+use PhpCollective\Infrastructure\Storage\Factories\LocalFactory;
+use PhpCollective\Infrastructure\Storage\FileFactory;
+use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilder;
+use PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor;
+use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
+use PhpCollective\Infrastructure\Storage\FileStorage;
+use PhpCollective\Infrastructure\Storage\StorageAdapterFactory;
+use PhpCollective\Infrastructure\Storage\StorageService;
 use Intervention\Image\ImageManager;
 
 /*******************************************************************************
