@@ -12,3 +12,6 @@ charset = utf-8
 
 [*.bat]
 end_of_line = crlf
+
+[*.neon]
+indent_style = tab

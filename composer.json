@@ -8,10 +8,14 @@
         {
             "name": "Florian Krämer",
             "role": "Maintainer"
+        },
+        {
+            "name": "Mark Scherer",
+            "role": "Maintainer"
         }
     ],
     "require": {
-        "php": ">=7.4",
+        "php": ">=8.1",
         "intervention/image": "^2.5",
         "spatie/image-optimizer": "^1.2",
         "ext-json": "*"

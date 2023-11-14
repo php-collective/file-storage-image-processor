@@ -5,11 +5,11 @@ on: [push, pull_request]
 jobs:
   testsuite:
     name: Unittests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        php-version: ['7.4', '8.2']
+        php-version: ['8.1', '8.3']
 
     steps:
     - uses: actions/checkout@v2
@@ -17,7 +17,7 @@ jobs:
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
-        php-version: '7.4'
+        php-version: '8.1'
         extensions: mbstring, json, fileinfo
         tools: pecl
         coverage: pcov
@@ -30,44 +30,38 @@ jobs:
           composer install
         fi
 
-    - name: Phive install
-      run: php config/composer_phive.php
-
     - name: Run PHPUnit
       run: |
-        if [[ ${{ matrix.php-version }} == '7.4' ]]; then
-          bin/phpunit --coverage-clover=coverage.xml
+        if [[ ${{ matrix.php-version }} == '8.1' ]]; then
+          vendor/bin/phpunit --coverage-clover=coverage.xml
         else
-          bin/phpunit
+          vendor/bin/phpunit
         fi
 
     - name: Code Coverage Report
-      if: success() && matrix.php-version == '7.4'
-      uses: codecov/codecov-action@v1
+      if: success() && matrix.php-version == '8.1'
+      uses: codecov/codecov-action@v3
 
   cs-stan:
     name: Coding Standard & Static Analysis
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
-        php-version: '7.4'
+        php-version: '8.1'
         extensions: mbstring, json, fileinfo
         coverage: none
         tools: pecl
 
     - name: Composer install
-      run: composer update --prefer-lowest --prefer-stable
-
-    - name: Phive install
-      run: php config/composer_phive.php
+      run: composer update --prefer-stable
 
     - name: Run phpstan
-      run: bin/phpstan --error-format=github
+      run: vendor/bin/phpstan --error-format=github
 
     - name: Run phpcs
-      run: bin/phpcs --report=checkstyle
+      run: vendor/bin/phpcs --report=checkstyle
