@@ -17,7 +17,7 @@ declare(strict_types=1);
 namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
 use GuzzleHttp\Psr7\StreamWrapper;
-use http\Exception\InvalidArgumentException;
+use InvalidArgumentException;
 use Intervention\Image\Image;
 use Intervention\Image\ImageManager;
 use League\Flysystem\Config;
@@ -29,7 +29,7 @@ use PhpCollective\Infrastructure\Storage\Processor\ProcessorInterface;
 use PhpCollective\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface;
 use PhpCollective\Infrastructure\Storage\Utility\TemporaryFile;
 
-use function PhpCollective\Infrastructure\Storage\fopen;
+use function PhpCollective\Infrastructure\Storage\openFile;
 
 /**
  * Image Operator
@@ -222,7 +222,7 @@ class ImageProcessor implements ProcessorInterface
 
         // Create a local tmp file on the processing system / machine
         $tempFile = TemporaryFile::create();
-        $tempFileStream = fopen($tempFile, 'wb+');
+        $tempFileStream = openFile($tempFile, 'wb+');
 
         // Read the data from the files resource if (still) present,
         // if not fetch it from the storage backend and write the data
@@ -294,7 +294,7 @@ class ImageProcessor implements ProcessorInterface
         // Optimize it and write it to another file
         $this->optimizer()->optimize($optimizerTempFile, $optimizerOutput);
         // Open a new stream for the storage system
-        $optimizerOutputHandler = fopen($optimizerOutput, 'rb+');
+        $optimizerOutputHandler = openFile($optimizerOutput, 'rb+');
 
         // And store it...
         $storage->writeStream(
