@@ -178,7 +178,6 @@ class ImageProcessor implements ProcessorInterface
 
         if ($stream === null) {
             $stream = $storage->readStream($file->path());
-            $stream = $stream['stream'];
         } else {
             rewind($stream);
         }
