@@ -24,7 +24,7 @@
         "phpunit/phpunit": "^10.3",
         "phpstan/phpstan": "^1.10",
         "php-collective/code-sniffer": "^0.2.1",
-        "php-collective/file-storage": "dev-master as 1.0",
+        "php-collective/file-storage": "dev-league/flysystem-v3 as 1.0",
         "instituteweb/composer-scripts": "^1.1"
     },
     "minimum-stability": "dev",
