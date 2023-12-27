@@ -1,6 +1,9 @@
 name: CI
 
-on: [push, pull_request]
+on:
+    push:
+    pull_request:
+    workflow_dispatch:
 
 jobs:
   testsuite:
@@ -17,7 +20,7 @@ jobs:
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
-        php-version: '8.1'
+        php-version: ${{ matrix.php-version }}
         extensions: mbstring, json, fileinfo
         tools: pecl
         coverage: pcov
