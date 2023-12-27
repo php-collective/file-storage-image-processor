@@ -223,17 +223,16 @@ class ImageVariant extends Variant
     }
 
     /**
-     * @link http://image.intervention.io/api/fit
      * @param int $width Width
-     * @param int|null $height Height
+     * @param null $height Height
      * @param callable|null $callback Callback
      * @param bool $preventUpscale Prevent Upscaling
      * @param string $position Position
      * @return $this
      */
-    public function fit(
+    public function cover(
         int $width,
-        ?int $height = null,
+        int $height,
         ?callable $callback = null,
         bool $preventUpscale = false,
         string $position = 'center'

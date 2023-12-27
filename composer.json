@@ -16,8 +16,8 @@
     ],
     "require": {
         "php": ">=8.1",
-        "intervention/image": "^2.5",
-        "spatie/image-optimizer": "^1.2",
+        "intervention/image": "^3.2.0",
+        "spatie/image-optimizer": "^1.2.0",
         "ext-json": "*"
     },
     "require-dev": {
@@ -43,7 +43,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "PhpCollective\\Test\\": "tests/"
+            "PhpCollective\\Test\\": "tests/",
+            "TestApp\\": "tests/test_app/src/"
         }
     },
     "scripts": {

@@ -37,7 +37,7 @@ class ImageVariantTest extends TestCase
             ->heighten(200)
             ->widen(200)
             ->crop(200, 200)
-            ->fit(200, 200)
+            ->cover(200, 200)
             ->rotate(90)
             ->sharpen(90)
             ->optimize();

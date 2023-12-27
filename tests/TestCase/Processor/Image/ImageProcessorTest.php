@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 namespace PhpCollective\Test\TestCase\Processor\Image;
 
-use Intervention\Image\Image;
+use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
 use PhpCollective\Infrastructure\Storage\File;
 use PhpCollective\Infrastructure\Storage\FileFactory;
@@ -25,6 +25,7 @@ use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilder;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor;
 use PhpCollective\Test\TestCase\TestCase;
+use TestApp\Image;
 
 /**
  * ImageProcessorTest
@@ -41,15 +42,7 @@ class ImageProcessorTest extends TestCase
 
         $pathBuilder = new PathBuilder();
 
-        $imageManager = $this->getMockBuilder(ImageManager::class)
-            ->getMock();
-
-        $image = $this->getMockBuilder(Image::class)
-            ->getMock();
-
-        $imageManager->expects($this->any())
-            ->method('make')
-            ->willReturn($image);
+        $imageManager = new ImageManager(new Driver());
 
         $processor = new ImageProcessor(
             $fileStorage,

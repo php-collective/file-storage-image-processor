@@ -16,24 +16,36 @@ declare(strict_types=1);
 
 namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
-use Intervention\Image\Image;
+use Intervention\Image\Interfaces\ImageInterface;
 use InvalidArgumentException;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOperationException;
 
 /**
  * Operations
+ *
+ * @link https://image.intervention.io/v3
  */
 class Operations
 {
-    /**
-     * @var \Intervention\Image\Image
-     */
-    protected Image $image;
+    public const POSITION_CENTER = 'center';
+    public const POSITION_TOP_CENTER = 'top-center';
+    public const POSITION_BOTTOM_CENTER = 'bottom-center';
+    public const POSITION_LEFT_TOP = 'left-top';
+    public const POSITION_RIGHT_TOP = 'right-top';
+    public const POSITION_LEFT_CENTER = 'left-center';
+    public const POSITION_RIGHT_CENTER = 'right-center';
+    public const POSITION_LEFT_BOTTOM = 'left-bottom';
+    public const POSITION_RIGHT_BOTTOM = 'right-bottom';
 
     /**
-     * @param \Intervention\Image\Image $image Image
+     * @var \Intervention\Image\Interfaces\ImageInterface
      */
-    public function __construct(Image $image)
+    protected ImageInterface $image;
+
+    /**
+     * @param \Intervention\Image\Interfaces\ImageInterface $image Image
+     */
+    public function __construct(ImageInterface $image)
     {
         $this->image = $image;
     }
@@ -51,34 +63,37 @@ class Operations
     /**
      * Crops the image
      *
-     * @link http://image.intervention.io/api/fit
      * @param array<string, mixed> $arguments Arguments
      * @return void
      */
-    public function fit(array $arguments): void
+    public function cover(array $arguments): void
     {
-        if (!isset($arguments['width'])) {
-            throw new InvalidArgumentException('Missing width');
+        if (!isset($arguments['height'], $arguments['width'])) {
+            throw new InvalidArgumentException('Missing width or height');
         }
 
+        $arguments += ['position' => static::POSITION_CENTER];
         $preventUpscale = $arguments['preventUpscale'] ?? false;
-        $height = $arguments['height'] ?? null;
+        if ($preventUpscale) {
+            $this->image->coverDown(
+                (int)$arguments['width'],
+                (int)$arguments['height'],
+                $arguments['position']
+            );
 
-        $this->image->fit(
+            return;
+        }
+
+        $this->image->cover(
             (int)$arguments['width'],
-            (int)$height,
-            static function ($constraint) use ($preventUpscale) {
-                if ($preventUpscale) {
-                    $constraint->upsize();
-                }
-            }
+            (int)$arguments['height'],
+            $arguments['position']
         );
     }
 
     /**
      * Crops the image
      *
-     * @link http://image.intervention.io/api/crop
      * @param array<string, mixed> $arguments Arguments
      * @return void
      */
@@ -88,19 +103,18 @@ class Operations
             throw new InvalidArgumentException('Missing width or height');
         }
 
-        $arguments = array_merge(['x' => null, 'y' => null], $arguments);
+        $arguments += ['x' => null, 'y' => null, 'position' => static::POSITION_CENTER];
         $height = $arguments['height'] ? (int)$arguments['height'] : null;
         $width = $arguments['width'] ? (int)$arguments['width'] : null;
-        $x = $arguments['x'] ? (int)$arguments['x'] : null;
-        $y = $arguments['y'] ? (int)$arguments['y'] : null;
+        $x = $arguments['x'] ? (int)$arguments['x'] : 0;
+        $y = $arguments['y'] ? (int)$arguments['y'] : 0;
 
-        $this->image->crop($width, $height, $x, $y);
+        $this->image->crop($width, $height, $x, $y, $arguments['position']);
     }
 
     /**
      * Flips the image horizontal
      *
-     * @link http://image.intervention.io/api/flip
      * @return void
      */
     public function flipHorizontal(): void
@@ -111,7 +125,6 @@ class Operations
     /**
      * Flips the image vertical
      *
-     * @link http://image.intervention.io/api/flip
      * @return void
      */
     public function flipVertical(): void
@@ -122,7 +135,6 @@ class Operations
     /**
      * Flips the image
      *
-     * @link http://image.intervention.io/api/flip
      * @param array<string, mixed> $arguments Arguments
      * @return void
      */
@@ -138,13 +150,48 @@ class Operations
             );
         }
 
-        $this->image->flip($arguments['direction']);
+        if ($arguments['direction'] === 'h') {
+            $this->image->flip();
+
+            return;
+        }
+
+        $this->image->flop();
+    }
+
+    /**
+     * @param array<string, mixed> $arguments
+     *
+     * @return void
+     */
+    public function scale(array $arguments): void
+    {
+        if (!isset($arguments['height'], $arguments['width'])) {
+            throw new InvalidArgumentException(
+                'Missing height or width'
+            );
+        }
+
+        $preventUpscale = $arguments['preventUpscale'] ?? false;
+
+        if ($preventUpscale) {
+            $this->image->scaleDown(
+                $arguments['width'],
+                $arguments['height']
+            );
+
+            return;
+        }
+
+        $this->image->scale(
+            $arguments['width'],
+            $arguments['height'],
+        );
     }
 
     /**
      * Resizes the image
      *
-     * @link http://image.intervention.io/api/resize
      * @param array<string, mixed> $arguments Arguments
      * @return void
      */
@@ -156,69 +203,32 @@ class Operations
             );
         }
 
-        $aspectRatio = $arguments['aspectRatio'] ?? true;
+        // Deprecated: Coming from old API
+        $aspectRatio = $arguments['aspectRatio'] ?? null;
+        if ($aspectRatio !== null) {
+            $this->scale($arguments);
+
+            return;
+        }
+
         $preventUpscale = $arguments['preventUpscale'] ?? false;
+
+        if ($preventUpscale) {
+            $this->image->resizeDown(
+                $arguments['width'],
+                $arguments['height']
+            );
+
+            return;
+        }
 
         $this->image->resize(
             $arguments['width'],
             $arguments['height'],
-            static function ($constraint) use ($aspectRatio, $preventUpscale) {
-                if ($aspectRatio) {
-                    $constraint->aspectRatio();
-                }
-                if ($preventUpscale) {
-                    $constraint->upsize();
-                }
-            }
         );
     }
 
     /**
-     * @link http://image.intervention.io/api/widen
-     * @param array<string, mixed> $arguments Arguments
-     * @return void
-     */
-    public function widen(array $arguments): void
-    {
-        if (!isset($arguments['width'])) {
-            throw new InvalidArgumentException(
-                'Missing width'
-            );
-        }
-
-        $preventUpscale = $arguments['preventUpscale'] ?? false;
-
-        $this->image->widen((int)$arguments['width'], function ($constraint) use ($preventUpscale) {
-            if ($preventUpscale) {
-                $constraint->upsize();
-            }
-        });
-    }
-
-    /**
-     * @link http://image.intervention.io/api/heighten
-     * @param array<string, mixed> $arguments Arguments
-     * @return void
-     */
-    public function heighten(array $arguments): void
-    {
-        if (!isset($arguments['height'])) {
-            throw new InvalidArgumentException(
-                'Missing height'
-            );
-        }
-
-        $preventUpscale = $arguments['preventUpscale'] ?? false;
-
-        $this->image->heighten((int)$arguments['height'], function ($constraint) use ($preventUpscale) {
-            if ($preventUpscale) {
-                $constraint->upsize();
-            }
-        });
-    }
-
-    /**
-     * @link http://image.intervention.io/api/rotate
      * @param array<string, mixed> $arguments Arguments
      * @return void
      */
@@ -234,8 +244,6 @@ class Operations
     }
 
     /**
-     * @link http://image.intervention.io/api/rotate
-     * @param array<string, mixed> $arguments Arguments
      * @return void
      */
     public function sharpen(array $arguments): void
