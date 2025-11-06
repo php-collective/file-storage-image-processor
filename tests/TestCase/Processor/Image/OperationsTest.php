@@ -16,9 +16,9 @@ declare(strict_types=1);
 
 namespace PhpCollective\Test\TestCase\Processor\Image;
 
-use Intervention\Image\Image;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Operations;
 use PhpCollective\Test\TestCase\TestCase;
+use TestApp\Image;
 
 /**
  * OperationsTest
@@ -31,7 +31,8 @@ class OperationsTest extends TestCase
     public function testOperations(): void
     {
         $imageMock = $this->getMockBuilder(Image::class)
-            ->addMethods([
+            ->disableOriginalConstructor()
+            ->onlyMethods([
                 'resize'
             ])
             ->getMock();
@@ -48,45 +49,22 @@ class OperationsTest extends TestCase
     /**
      * @return void
      */
-    public function testHeighten(): void
+    public function testScale(): void
     {
         $imageMock = $this->getMockBuilder(Image::class)
-            ->addMethods([
-                'heighten'
+            ->disableOriginalConstructor()
+            ->onlyMethods([
+                'scale'
             ])
             ->getMock();
 
         $operations = new Operations($imageMock);
 
         $imageMock->expects($this->once())
-            ->method('heighten')
-            ->with(100);
+            ->method('scale')
+            ->with(100, 200);
 
-        $operations->heighten(['height' => 100]);
-    }
-
-    /**
-     * @return void
-     */
-    public function testWiden(): void
-    {
-        $imageMock = $this->getMockBuilder(Image::class)
-            ->addMethods([
-                'widen'
-            ])
-            ->getMock();
-
-        $operations = new Operations($imageMock);
-
-        $imageMock->expects($this->once())
-            ->method('widen')
-            ->with(100);
-
-        $operations->widen(['width' => 100]);
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Missing width');
-        $operations->widen([]);
+        $operations->scale(['height' => 200, 'width' => 100]);
     }
 
     /**
@@ -95,7 +73,8 @@ class OperationsTest extends TestCase
     public function testRotate(): void
     {
         $imageMock = $this->getMockBuilder(Image::class)
-            ->addMethods([
+            ->disableOriginalConstructor()
+            ->onlyMethods([
                 'rotate'
             ])
             ->getMock();
@@ -119,7 +98,8 @@ class OperationsTest extends TestCase
     public function testSharpen(): void
     {
         $imageMock = $this->getMockBuilder(Image::class)
-            ->addMethods([
+            ->disableOriginalConstructor()
+            ->onlyMethods([
                 'sharpen'
             ])
             ->getMock();
@@ -140,25 +120,26 @@ class OperationsTest extends TestCase
     /**
      * @return void
      */
-    public function testFit(): void
+    public function testCover(): void
     {
         $imageMock = $this->getMockBuilder(Image::class)
-            ->addMethods([
-                'fit'
+            ->disableOriginalConstructor()
+            ->onlyMethods([
+                'cover'
             ])
             ->getMock();
 
         $operations = new Operations($imageMock);
 
         $imageMock->expects($this->once())
-            ->method('fit')
-            ->with(100);
+            ->method('cover')
+            ->with(100, 100);
 
-        $operations->fit(['width' => 100]);
+        $operations->cover(['width' => 100, 'height' => 100]);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Missing width');
-        $operations->fit([]);
+        $operations->cover([]);
     }
 
     /**
@@ -167,7 +148,8 @@ class OperationsTest extends TestCase
     public function testCrop(): void
     {
         $imageMock = $this->getMockBuilder(Image::class)
-            ->addMethods([
+            ->disableOriginalConstructor()
+            ->onlyMethods([
                 'crop'
             ])
             ->getMock();
@@ -176,7 +158,7 @@ class OperationsTest extends TestCase
 
         $imageMock->expects($this->once())
             ->method('crop')
-            ->with(100);
+            ->with(100, 200);
 
         $operations->crop(['width' => 100, 'height' => 200]);
 

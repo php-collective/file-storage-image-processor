@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
 use GuzzleHttp\Psr7\StreamWrapper;
+use Intervention\Image\Interfaces\ImageInterface;
 use InvalidArgumentException;
 use Intervention\Image\Image;
 use Intervention\Image\ImageManager;
@@ -74,9 +75,9 @@ class ImageProcessor implements ProcessorInterface
     protected ImageManager $imageManager;
 
     /**
-     * @var \Intervention\Image\Image
+     * @var \Intervention\Image\Interfaces\ImageInterface
      */
-    protected Image $image;
+    protected ImageInterface $image;
 
     /**
      * Quality setting for writing images
@@ -239,7 +240,7 @@ class ImageProcessor implements ProcessorInterface
                 continue;
             }
 
-            $this->image = $this->imageManager->make($tempFile);
+            $this->image = $this->imageManager->read($tempFile);
             $operations = new Operations($this->image);
 
             // Apply the operations
@@ -285,11 +286,12 @@ class ImageProcessor implements ProcessorInterface
 
         // We need more tmp files because the optimizer likes to write
         // and read the files from disk, not from a stream. :(
+        //FIXME Use memory/stream instead?
         $optimizerTempFile = TemporaryFile::create();
         $optimizerOutput = TemporaryFile::create();
 
         // Save the image to the tmp file
-        $this->image->save($optimizerTempFile, 90, $file->extension());
+        $this->image->save($optimizerTempFile, 90);
         // Optimize it and write it to another file
         $this->optimizer()->optimize($optimizerTempFile, $optimizerOutput);
         // Open a new stream for the storage system
