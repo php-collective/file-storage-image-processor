@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types = 1);
 
 /**
  * Copyright (c) Florian Krämer (https://florian-kraemer.net)
@@ -7,12 +7,10 @@
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) Florian Krämer (https://florian-kraemer.net)
- * @author    Florian Krämer
- * @link      https://github.com/Phauthentic
- * @license   https://opensource.org/licenses/MIT MIT License
+ * @author Florian Krämer
+ * @link https://github.com/Phauthentic
+ * @license https://opensource.org/licenses/MIT MIT License
  */
-
-declare(strict_types=1);
 
 namespace PhpCollective\Infrastructure\Storage\Processor\Image\Exception;
 
@@ -23,13 +21,14 @@ class TempFileCreationFailedException extends ImageProcessingException
 {
     /**
      * @param string $name Name
+     *
      * @return self
      */
     public static function withFilename(string $name): self
     {
         return new self(sprintf(
             'Failed to create `%s`',
-            $name
+            $name,
         ));
     }
 }

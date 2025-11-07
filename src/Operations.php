@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types = 1);
 
 /**
  * Copyright (c) Florian Krämer (https://florian-kraemer.net)
@@ -7,12 +7,10 @@
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) Florian Krämer (https://florian-kraemer.net)
- * @author    Florian Krämer
- * @link      https://github.com/Phauthentic
- * @license   https://opensource.org/licenses/MIT MIT License
+ * @author Florian Krämer
+ * @link https://github.com/Phauthentic
+ * @license https://opensource.org/licenses/MIT MIT License
  */
-
-declare(strict_types=1);
 
 namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
@@ -27,14 +25,49 @@ use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOp
  */
 class Operations
 {
+    /**
+     * @var string
+     */
     public const POSITION_CENTER = 'center';
+
+    /**
+     * @var string
+     */
     public const POSITION_TOP_CENTER = 'top-center';
+
+    /**
+     * @var string
+     */
     public const POSITION_BOTTOM_CENTER = 'bottom-center';
+
+    /**
+     * @var string
+     */
     public const POSITION_LEFT_TOP = 'left-top';
+
+    /**
+     * @var string
+     */
     public const POSITION_RIGHT_TOP = 'right-top';
+
+    /**
+     * @var string
+     */
     public const POSITION_LEFT_CENTER = 'left-center';
+
+    /**
+     * @var string
+     */
     public const POSITION_RIGHT_CENTER = 'right-center';
+
+    /**
+     * @var string
+     */
     public const POSITION_LEFT_BOTTOM = 'left-bottom';
+
+    /**
+     * @var string
+     */
     public const POSITION_RIGHT_BOTTOM = 'right-bottom';
 
     /**
@@ -53,6 +86,9 @@ class Operations
     /**
      * @param string $name Name
      * @param array<string, mixed> $arguments Arguments
+     *
+     * @throws \PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOperationException
+     *
      * @return mixed
      */
     public function __call(string $name, array $arguments): mixed
@@ -64,6 +100,9 @@ class Operations
      * Crops the image
      *
      * @param array<string, mixed> $arguments Arguments
+     *
+     * @throws \InvalidArgumentException
+     *
      * @return void
      */
     public function cover(array $arguments): void
@@ -78,7 +117,7 @@ class Operations
             $this->image->coverDown(
                 (int)$arguments['width'],
                 (int)$arguments['height'],
-                $arguments['position']
+                $arguments['position'],
             );
 
             return;
@@ -87,7 +126,7 @@ class Operations
         $this->image->cover(
             (int)$arguments['width'],
             (int)$arguments['height'],
-            $arguments['position']
+            $arguments['position'],
         );
     }
 
@@ -95,6 +134,9 @@ class Operations
      * Crops the image
      *
      * @param array<string, mixed> $arguments Arguments
+     *
+     * @throws \InvalidArgumentException
+     *
      * @return void
      */
     public function crop(array $arguments): void
@@ -104,8 +146,8 @@ class Operations
         }
 
         $arguments += ['x' => null, 'y' => null, 'position' => static::POSITION_CENTER];
-        $height = $arguments['height'] ? (int)$arguments['height'] : null;
-        $width = $arguments['width'] ? (int)$arguments['width'] : null;
+        $height = (int)$arguments['height'];
+        $width = (int)$arguments['width'];
         $x = $arguments['x'] ? (int)$arguments['x'] : 0;
         $y = $arguments['y'] ? (int)$arguments['y'] : 0;
 
@@ -136,6 +178,9 @@ class Operations
      * Flips the image
      *
      * @param array<string, mixed> $arguments Arguments
+     *
+     * @throws \InvalidArgumentException
+     *
      * @return void
      */
     public function flip(array $arguments): void
@@ -146,7 +191,7 @@ class Operations
 
         if ($arguments['direction'] !== 'v' && $arguments['direction'] !== 'h') {
             throw new InvalidArgumentException(
-                'Invalid argument, you must provide h or v'
+                'Invalid argument, you must provide h or v',
             );
         }
 
@@ -162,13 +207,15 @@ class Operations
     /**
      * @param array<string, mixed> $arguments
      *
+     * @throws \InvalidArgumentException
+     *
      * @return void
      */
     public function scale(array $arguments): void
     {
         if (!isset($arguments['height'], $arguments['width'])) {
             throw new InvalidArgumentException(
-                'Missing height or width'
+                'Missing height or width',
             );
         }
 
@@ -177,7 +224,7 @@ class Operations
         if ($preventUpscale) {
             $this->image->scaleDown(
                 $arguments['width'],
-                $arguments['height']
+                $arguments['height'],
             );
 
             return;
@@ -193,13 +240,16 @@ class Operations
      * Resizes the image
      *
      * @param array<string, mixed> $arguments Arguments
+     *
+     * @throws \InvalidArgumentException
+     *
      * @return void
      */
     public function resize(array $arguments): void
     {
         if (!isset($arguments['height'], $arguments['width'])) {
             throw new InvalidArgumentException(
-                'Missing height or width'
+                'Missing height or width',
             );
         }
 
@@ -216,7 +266,7 @@ class Operations
         if ($preventUpscale) {
             $this->image->resizeDown(
                 $arguments['width'],
-                $arguments['height']
+                $arguments['height'],
             );
 
             return;
@@ -230,13 +280,16 @@ class Operations
 
     /**
      * @param array<string, mixed> $arguments Arguments
+     *
+     * @throws \InvalidArgumentException
+     *
      * @return void
      */
     public function rotate(array $arguments): void
     {
         if (!isset($arguments['angle'])) {
             throw new InvalidArgumentException(
-                'Missing angle'
+                'Missing angle',
             );
         }
 
@@ -244,13 +297,17 @@ class Operations
     }
 
     /**
+     * @param array<string, mixed> $arguments
+     *
+     * @throws \InvalidArgumentException
+     *
      * @return void
      */
     public function sharpen(array $arguments): void
     {
         if (!isset($arguments['amount'])) {
             throw new InvalidArgumentException(
-                'Missing amount'
+                'Missing amount',
             );
         }
 
@@ -262,19 +319,22 @@ class Operations
      * and the arguments passed to it.
      *
      * @param array<string, mixed> $arguments Arguments
+     *
+     * @throws \InvalidArgumentException
+     *
      * @return void
      */
     public function callback(array $arguments): void
     {
         if (!isset($arguments['callback'])) {
             throw new InvalidArgumentException(
-                'Missing callback argument'
+                'Missing callback argument',
             );
         }
 
         if (!is_callable($arguments['callback'])) {
             throw new InvalidArgumentException(
-                'Provided value for callback is not a callable'
+                'Provided value for callback is not a callable',
             );
         }
 

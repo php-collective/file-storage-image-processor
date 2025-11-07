@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types = 1);
 
 /**
  * Copyright (c) Florian Krämer (https://florian-kraemer.net)
@@ -7,12 +7,10 @@
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) Florian Krämer (https://florian-kraemer.net)
- * @author    Florian Krämer
- * @link      https://github.com/Phauthentic
- * @license   https://opensource.org/licenses/MIT MIT License
+ * @author Florian Krämer
+ * @link https://github.com/Phauthentic
+ * @license https://opensource.org/licenses/MIT MIT License
  */
-
-declare(strict_types=1);
 
 namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
@@ -47,6 +45,7 @@ class ImageVariantCollection implements ImageVariantCollectionInterface
      * @param object $object
      * @param string $method
      * @param array<string, mixed> $args
+     *
      * @return array<string, mixed>
      */
     protected static function filterArgs(object $object, string $method, array $args): array
@@ -67,6 +66,7 @@ class ImageVariantCollection implements ImageVariantCollectionInterface
 
     /**
      * @param array<string, array<string, mixed>> $variants Variant array structure
+     *
      * @return self
      */
     public static function fromArray(array $variants)
@@ -90,9 +90,11 @@ class ImageVariantCollection implements ImageVariantCollectionInterface
 
                 /** @var array<mixed> $parameters */
                 $parameters = self::filterArgs($variant, $method, $args);
+                /** @var callable $callable */
+                $callable = [$variant, $method];
                 $variant = call_user_func_array(
-                    [$variant, $method],
-                    $parameters
+                    $callable,
+                    $parameters,
                 );
             }
 
@@ -104,6 +106,7 @@ class ImageVariantCollection implements ImageVariantCollectionInterface
 
     /**
      * @param string $name Name
+     *
      * @return \PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariant
      */
     public function addNew(string $name)
@@ -117,6 +120,7 @@ class ImageVariantCollection implements ImageVariantCollectionInterface
      * Gets a manipulation from the collection
      *
      * @param string $name
+     *
      * @return \PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariant
      */
     public function get(string $name): ImageVariant
@@ -126,6 +130,9 @@ class ImageVariantCollection implements ImageVariantCollectionInterface
 
     /**
      * @param \PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariant $variant Variant
+     *
+     * @throws \PhpCollective\Infrastructure\Storage\Processor\Exception\VariantExistsException
+     *
      * @return void
      */
     public function add(ImageVariant $variant): void
@@ -139,6 +146,7 @@ class ImageVariantCollection implements ImageVariantCollectionInterface
 
     /**
      * @param string $name
+     *
      * @return bool
      */
     public function has(string $name): bool

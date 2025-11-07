@@ -2,10 +2,6 @@
 
 namespace TestApp;
 
-use Countable;
-use Intervention\Image\Collection;
-use Intervention\Image\Origin;
-use Traversable;
 use Intervention\Image\Analyzers\ColorspaceAnalyzer;
 use Intervention\Image\Analyzers\HeightAnalyzer;
 use Intervention\Image\Analyzers\PixelColorAnalyzer;
@@ -13,6 +9,8 @@ use Intervention\Image\Analyzers\PixelColorsAnalyzer;
 use Intervention\Image\Analyzers\ProfileAnalyzer;
 use Intervention\Image\Analyzers\ResolutionAnalyzer;
 use Intervention\Image\Analyzers\WidthAnalyzer;
+use Intervention\Image\Collection;
+use Intervention\Image\EncodedImage;
 use Intervention\Image\Encoders\AutoEncoder;
 use Intervention\Image\Encoders\AvifEncoder;
 use Intervention\Image\Encoders\BmpEncoder;
@@ -52,6 +50,8 @@ use Intervention\Image\Modifiers\ColorizeModifier;
 use Intervention\Image\Modifiers\ColorspaceModifier;
 use Intervention\Image\Modifiers\ContainModifier;
 use Intervention\Image\Modifiers\ContrastModifier;
+use Intervention\Image\Modifiers\CoverDownModifier;
+use Intervention\Image\Modifiers\CoverModifier;
 use Intervention\Image\Modifiers\CropModifier;
 use Intervention\Image\Modifiers\DrawEllipseModifier;
 use Intervention\Image\Modifiers\DrawLineModifier;
@@ -59,8 +59,6 @@ use Intervention\Image\Modifiers\DrawPixelModifier;
 use Intervention\Image\Modifiers\DrawPolygonModifier;
 use Intervention\Image\Modifiers\DrawRectangleModifier;
 use Intervention\Image\Modifiers\FillModifier;
-use Intervention\Image\Modifiers\CoverDownModifier;
-use Intervention\Image\Modifiers\CoverModifier;
 use Intervention\Image\Modifiers\FlipModifier;
 use Intervention\Image\Modifiers\FlopModifier;
 use Intervention\Image\Modifiers\GammaModifier;
@@ -83,30 +81,30 @@ use Intervention\Image\Modifiers\ScaleDownModifier;
 use Intervention\Image\Modifiers\ScaleModifier;
 use Intervention\Image\Modifiers\SharpenModifier;
 use Intervention\Image\Modifiers\TextModifier;
+use Intervention\Image\Origin;
 use Intervention\Image\Typography\FontFactory;
-use Intervention\Image\EncodedImage;
+use Traversable;
 
 class Image implements ImageInterface
 {
     /**
      * The origin from which the image was created
      *
-     * @var Origin
+     * @var \Intervention\Image\Origin
      */
     protected Origin $origin;
 
     /**
      * Create new instance
      *
-     * @param DriverInterface $driver
-     * @param CoreInterface $core
-     * @param CollectionInterface $exif
-     * @return void
+     * @param \Intervention\Image\Interfaces\DriverInterface $driver
+     * @param \Intervention\Image\Interfaces\CoreInterface $core
+     * @param \Intervention\Image\Interfaces\CollectionInterface $exif
      */
     public function __construct(
         protected DriverInterface $driver,
         protected CoreInterface $core,
-        protected CollectionInterface $exif = new Collection()
+        protected CollectionInterface $exif = new Collection(),
     ) {
         $this->origin = new Origin();
     }
@@ -166,7 +164,7 @@ class Image implements ImageInterface
     /**
      * Implementation of IteratorAggregate
      *
-     * @return Traversable
+     * @return \Traversable
      */
     public function getIterator(): Traversable
     {
@@ -222,7 +220,7 @@ class Image implements ImageInterface
      */
     public function exif(?string $query = null): mixed
     {
-        return is_null($query) ? $this->exif : $this->exif->get($query);
+        return $query === null ? $this->exif : $this->exif->get($query);
     }
 
     /**
@@ -262,7 +260,7 @@ class Image implements ImageInterface
      */
     public function save(?string $path = null, int $quality = 75): ImageInterface
     {
-        $path = is_null($path) ? $this->origin()->filePath() : $path;
+        $path = $path ?? $this->origin()->filePath();
 
         $this->encodeByPath($path, $quality)->save($path);
 
@@ -604,7 +602,7 @@ class Image implements ImageInterface
         ?int $width = null,
         ?int $height = null,
         mixed $background = 'ffffff',
-        string $position = 'center'
+        string $position = 'center',
     ): ImageInterface {
         return $this->modify(new ResizeCanvasModifier($width, $height, $background, $position));
     }
@@ -618,7 +616,7 @@ class Image implements ImageInterface
         ?int $width = null,
         ?int $height = null,
         mixed $background = 'ffffff',
-        string $position = 'center'
+        string $position = 'center',
     ): ImageInterface {
         return $this->modify(new ResizeCanvasRelativeModifier($width, $height, $background, $position));
     }
@@ -632,7 +630,7 @@ class Image implements ImageInterface
         int $width,
         int $height,
         mixed $background = 'ffffff',
-        string $position = 'center'
+        string $position = 'center',
     ): ImageInterface {
         return $this->modify(new PadModifier($width, $height, $background, $position));
     }
@@ -646,7 +644,7 @@ class Image implements ImageInterface
         int $width,
         int $height,
         mixed $background = 'ffffff',
-        string $position = 'center'
+        string $position = 'center',
     ): ImageInterface {
         return $this->modify(new ContainModifier($width, $height, $background, $position));
     }
@@ -661,7 +659,7 @@ class Image implements ImageInterface
         int $height,
         int $offset_x = 0,
         int $offset_y = 0,
-        string $position = 'top-left'
+        string $position = 'top-left',
     ): ImageInterface {
         return $this->modify(new CropModifier($width, $height, $offset_x, $offset_y, $position));
     }
@@ -675,7 +673,7 @@ class Image implements ImageInterface
         mixed $element,
         string $position = 'top-left',
         int $offset_x = 0,
-        int $offset_y = 0
+        int $offset_y = 0,
     ): ImageInterface {
         return $this->modify(new PlaceModifier($element, $position, $offset_x, $offset_y));
     }
@@ -690,7 +688,7 @@ class Image implements ImageInterface
         return $this->modify(
             new FillModifier(
                 $color,
-                (is_null($x) || is_null($y)) ? null : new Point($x, $y),
+                ($x === null || $y === null) ? null : new Point($x, $y),
             ),
         );
     }
@@ -809,7 +807,8 @@ class Image implements ImageInterface
      * Alias of self::toJpeg()
      *
      * @param int $quality
-     * @return EncodedImageInterface
+     *
+     * @return \Intervention\Image\Interfaces\EncodedImageInterface
      */
     public function toJpg(int $quality = 75): EncodedImageInterface
     {
@@ -829,8 +828,9 @@ class Image implements ImageInterface
     /**
      * ALias of self::toJpeg2000()
      *
-     * @param  int $quality
-     * @return EncodedImageInterface
+     * @param int $quality
+     *
+     * @return \Intervention\Image\Interfaces\EncodedImageInterface
      */
     public function toJp2(int $quality = 75): EncodedImageInterface
     {
@@ -880,7 +880,7 @@ class Image implements ImageInterface
     /**
      * Alias if self::toBitmap()
      *
-     * @return EncodedImageInterface
+     * @return \Intervention\Image\Interfaces\EncodedImageInterface
      */
     public function toBmp(): EncodedImageInterface
     {
@@ -911,7 +911,8 @@ class Image implements ImageInterface
      * Alias of self::toTiff()
      *
      * @param int $quality
-     * @return EncodedImageInterface
+     *
+     * @return \Intervention\Image\Interfaces\EncodedImageInterface
      */
     public function toTif(int $quality = 75): EncodedImageInterface
     {

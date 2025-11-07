@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types = 1);
 
 /**
  * Copyright (c) Florian Krämer (https://florian-kraemer.net)
@@ -7,12 +7,10 @@
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) Florian Krämer (https://florian-kraemer.net)
- * @author    Florian Krämer
- * @link      https://github.com/Phauthentic
- * @license   https://opensource.org/licenses/MIT MIT License
+ * @author Florian Krämer
+ * @link https://github.com/Phauthentic
+ * @license https://opensource.org/licenses/MIT MIT License
  */
-
-declare(strict_types=1);
 
 namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
@@ -27,19 +25,29 @@ class ImageVariant extends Variant
     protected string $name;
 
     /**
-     * @var array<int, string>
+     * @var array<string, array<string, mixed>>
      */
     protected array $operations;
 
     protected string $path = '';
+
     protected bool $optimize = false;
+
     protected string $url = '';
 
+    /**
+     * @var string
+     */
     public const FLIP_HORIZONTAL = 'h';
+
+    /**
+     * @var string
+     */
     public const FLIP_VERTICAL = 'v';
 
     /**
      * @param string $name Name
+     *
      * @return self
      */
     public static function create(string $name): self
@@ -55,7 +63,7 @@ class ImageVariant extends Variant
      *
      * @return $this
      */
-    public function optimize(): self
+    public function optimize()
     {
         $this->optimize = true;
 
@@ -67,15 +75,16 @@ class ImageVariant extends Variant
      * @param int|null $width Height
      * @param int|null $x X
      * @param int|null $y Y
+     *
      * @return $this
      */
-    public function crop(int $height, ?int $width = null, ?int $x = null, ?int $y = null): self
+    public function crop(int $height, ?int $width = null, ?int $x = null, ?int $y = null)
     {
         $this->operations['crop'] = [
             'width' => $width,
             'height' => $height,
             'x' => $x,
-            'y' => $y
+            'y' => $y,
         ];
 
         return $this;
@@ -83,9 +92,10 @@ class ImageVariant extends Variant
 
     /**
      * @param int $amount Angle
+     *
      * @return $this
      */
-    public function sharpen(int $amount): self
+    public function sharpen(int $amount)
     {
         $this->operations['sharpen'] = [
             'amount' => $amount,
@@ -96,9 +106,10 @@ class ImageVariant extends Variant
 
     /**
      * @param int $angle Angle
+     *
      * @return $this
      */
-    public function rotate(int $angle): self
+    public function rotate(int $angle)
     {
         $this->operations['rotate'] = [
             'angle' => $angle,
@@ -109,14 +120,15 @@ class ImageVariant extends Variant
 
     /**
      * @param int $height Height
-     * @param boolean $preventUpscale Prevent Upscaling
+     * @param bool $preventUpscale Prevent Upscaling
+     *
      * @return $this
      */
-    public function heighten(int $height, bool $preventUpscale = false): self
+    public function heighten(int $height, bool $preventUpscale = false)
     {
         $this->operations['heighten'] = [
             'height' => $height,
-            'preventUpscale' => $preventUpscale
+            'preventUpscale' => $preventUpscale,
         ];
 
         return $this;
@@ -124,14 +136,15 @@ class ImageVariant extends Variant
 
     /**
      * @param int $width Width
-     * @param boolean $preventUpscale Prevent Upscaling
+     * @param bool $preventUpscale Prevent Upscaling
+     *
      * @return $this
      */
-    public function widen(int $width, bool $preventUpscale = false): self
+    public function widen(int $width, bool $preventUpscale = false)
     {
         $this->operations['widen'] = [
             'width' => $width,
-            'preventUpscale' => $preventUpscale
+            'preventUpscale' => $preventUpscale,
         ];
 
         return $this;
@@ -142,15 +155,16 @@ class ImageVariant extends Variant
      * @param int $height Height
      * @param bool $aspectRatio Keeps the aspect ratio
      * @param bool $preventUpscale Prevents upscaling
+     *
      * @return $this
      */
-    public function resize(int $width, int $height, bool $aspectRatio = true, bool $preventUpscale = false): self
+    public function resize(int $width, int $height, bool $aspectRatio = true, bool $preventUpscale = false)
     {
         $this->operations['resize'] = [
             'width' => $width,
             'height' => $height,
             'aspectRatio' => $aspectRatio,
-            'preventUpscale' => $preventUpscale
+            'preventUpscale' => $preventUpscale,
         ];
 
         return $this;
@@ -161,10 +175,10 @@ class ImageVariant extends Variant
      *
      * @return $this
      */
-    public function flipHorizontal(): self
+    public function flipHorizontal()
     {
         $this->operations['flipHorizontal'] = [
-            'direction' => self::FLIP_HORIZONTAL
+            'direction' => self::FLIP_HORIZONTAL,
         ];
 
         return $this;
@@ -175,10 +189,10 @@ class ImageVariant extends Variant
      *
      * @return $this
      */
-    public function flipVertical(): self
+    public function flipVertical()
     {
         $this->operations['flipVertical'] = [
-            'direction' => self::FLIP_VERTICAL
+            'direction' => self::FLIP_VERTICAL,
         ];
 
         return $this;
@@ -188,19 +202,22 @@ class ImageVariant extends Variant
      * Flips the image
      *
      * @param string $direction Direction, h or v
+     *
+     * @throws \InvalidArgumentException
+     *
      * @return $this
      */
-    public function flip(string $direction): self
+    public function flip(string $direction)
     {
         if ($direction !== 'h' && $direction !== 'v') {
             throw new InvalidArgumentException(sprintf(
                 '`%s` is invalid, provide `h` or `v`',
-                $direction
+                $direction,
             ));
         }
 
         $this->operations['flip'] = [
-            'direction' => $direction
+            'direction' => $direction,
         ];
 
         return $this;
@@ -211,12 +228,13 @@ class ImageVariant extends Variant
      * and the arguments passed to it.
      *
      * @param callable $callback callback
+     *
      * @return $this
      */
-    public function callback(callable $callback): self
+    public function callback(callable $callback)
     {
         $this->operations['callback'] = [
-            'callback' => $callback
+            'callback' => $callback,
         ];
 
         return $this;
@@ -224,10 +242,11 @@ class ImageVariant extends Variant
 
     /**
      * @param int $width Width
-     * @param null $height Height
+     * @param int $height Height
      * @param callable|null $callback Callback
      * @param bool $preventUpscale Prevent Upscaling
      * @param string $position Position
+     *
      * @return $this
      */
     public function cover(
@@ -235,14 +254,14 @@ class ImageVariant extends Variant
         int $height,
         ?callable $callback = null,
         bool $preventUpscale = false,
-        string $position = 'center'
-    ): self {
+        string $position = 'center',
+    ) {
         $this->operations['cover'] = [
             'width' => $width,
             'height' => $height,
             'callback' => $callback,
             'preventUpscale' => $preventUpscale,
-            'position' => $position
+            'position' => $position,
         ];
 
         return $this;

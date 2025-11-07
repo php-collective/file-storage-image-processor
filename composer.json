@@ -16,15 +16,15 @@
     ],
     "require": {
         "php": ">=8.1",
+        "ext-json": "*",
         "intervention/image": "^3.2.0",
-        "spatie/image-optimizer": "^1.2.0",
-        "ext-json": "*"
+        "spatie/image-optimizer": "^1.2.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^10.3",
-        "phpstan/phpstan": "^1.10",
-        "php-collective/code-sniffer": "^0.2.1",
-        "php-collective/file-storage": "dev-league/flysystem-v3 as 1.0",
+        "phpunit/phpunit": "^10.3 || ^11.5 || ^12.3",
+        "phpstan/phpstan": "^2.1",
+        "php-collective/code-sniffer": "^0.4.1",
+        "php-collective/file-storage": "dev-master as 1.0",
         "instituteweb/composer-scripts": "^1.1"
     },
     "minimum-stability": "dev",

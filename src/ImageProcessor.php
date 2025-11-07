@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types = 1);
 
 /**
  * Copyright (c) Florian Krämer (https://florian-kraemer.net)
@@ -7,29 +7,25 @@
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) Florian Krämer (https://florian-kraemer.net)
- * @author    Florian Krämer
- * @link      https://github.com/Phauthentic
- * @license   https://opensource.org/licenses/MIT MIT License
+ * @author Florian Krämer
+ * @link https://github.com/Phauthentic
+ * @license https://opensource.org/licenses/MIT MIT License
  */
-
-declare(strict_types=1);
 
 namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
 use GuzzleHttp\Psr7\StreamWrapper;
+use Intervention\Image\ImageManager;
 use Intervention\Image\Interfaces\ImageInterface;
 use InvalidArgumentException;
-use Intervention\Image\Image;
-use Intervention\Image\ImageManager;
 use League\Flysystem\Config;
 use PhpCollective\Infrastructure\Storage\FileInterface;
-use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\TempFileCreationFailedException;
-use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilderInterface;
 use PhpCollective\Infrastructure\Storage\FileStorageInterface;
+use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilderInterface;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\TempFileCreationFailedException;
 use PhpCollective\Infrastructure\Storage\Processor\ProcessorInterface;
 use PhpCollective\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface;
 use PhpCollective\Infrastructure\Storage\Utility\TemporaryFile;
-
 use function PhpCollective\Infrastructure\Storage\openFile;
 
 /**
@@ -46,7 +42,7 @@ class ImageProcessor implements ProcessorInterface
         'image/gif',
         'image/jpg',
         'image/jpeg',
-        'image/png'
+        'image/png',
     ];
 
     /**
@@ -65,7 +61,7 @@ class ImageProcessor implements ProcessorInterface
     protected PathBuilderInterface $pathBuilder;
 
     /**
-     * @var \PhpCollective\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface
+     * @var \PhpCollective\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface|null
      */
     protected ?UrlBuilderInterface $urlBuilder;
 
@@ -90,12 +86,13 @@ class ImageProcessor implements ProcessorInterface
      * @param \PhpCollective\Infrastructure\Storage\FileStorageInterface $storageHandler File Storage Handler
      * @param \PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilderInterface $pathBuilder Path Builder
      * @param \Intervention\Image\ImageManager $imageManager Image Manager
+     * @param \PhpCollective\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface|null $urlBuilder
      */
     public function __construct(
         FileStorageInterface $storageHandler,
         PathBuilderInterface $pathBuilder,
         ImageManager $imageManager,
-        ?UrlBuilderInterface $urlBuilder = null
+        ?UrlBuilderInterface $urlBuilder = null,
     ) {
         $this->storageHandler = $storageHandler;
         $this->pathBuilder = $pathBuilder;
@@ -105,9 +102,10 @@ class ImageProcessor implements ProcessorInterface
 
     /**
      * @param array<int, string> $mimeTypes Mime Type List
+     *
      * @return $this
      */
-    protected function setMimeTypes(array $mimeTypes): self
+    protected function setMimeTypes(array $mimeTypes)
     {
         $this->mimeTypes = $mimeTypes;
 
@@ -116,14 +114,17 @@ class ImageProcessor implements ProcessorInterface
 
     /**
      * @param int $quality Quality
+     *
+     * @throws \InvalidArgumentException
+     *
      * @return $this
      */
-    public function setQuality(int $quality): self
+    public function setQuality(int $quality)
     {
         if ($quality > 100 || $quality <= 0) {
             throw new InvalidArgumentException(sprintf(
                 'Quality has to be a positive integer between 1 and 100. %s was provided',
-                (string)$quality
+                (string)$quality,
             ));
         }
 
@@ -134,6 +135,7 @@ class ImageProcessor implements ProcessorInterface
 
     /**
      * @param \PhpCollective\Infrastructure\Storage\FileInterface $file File
+     *
      * @return bool
      */
     protected function isApplicable(FileInterface $file): bool
@@ -144,9 +146,10 @@ class ImageProcessor implements ProcessorInterface
 
     /**
      * @param array<int, string> $variants Variants by name
+     *
      * @return $this
      */
-    public function processOnlyTheseVariants(array $variants): self
+    public function processOnlyTheseVariants(array $variants)
     {
         $this->processOnlyTheseVariants = $variants;
 
@@ -156,7 +159,7 @@ class ImageProcessor implements ProcessorInterface
     /**
      * @return $this
      */
-    public function processAll(): self
+    public function processAll()
     {
         $this->processOnlyTheseVariants = [];
 
@@ -170,6 +173,7 @@ class ImageProcessor implements ProcessorInterface
      *
      * @param \PhpCollective\Infrastructure\Storage\FileInterface $file File
      * @param resource $tempFileStream Temp File Stream Resource
+     *
      * @return int|bool False on error
      */
     protected function copyOriginalFileData(FileInterface $file, $tempFileStream)
@@ -184,7 +188,7 @@ class ImageProcessor implements ProcessorInterface
         }
         $result = stream_copy_to_stream(
             $stream,
-            $tempFileStream
+            $tempFileStream,
         );
         fclose($tempFileStream);
 
@@ -194,6 +198,7 @@ class ImageProcessor implements ProcessorInterface
     /**
      * @param string $variant Variant name
      * @param array<string, mixed> $variantData Variant data
+     *
      * @return bool
      */
     protected function shouldProcessVariant(string $variant, array $variantData): bool
@@ -211,6 +216,8 @@ class ImageProcessor implements ProcessorInterface
 
     /**
      * @inheritDoc
+     *
+     * @throws \PhpCollective\Infrastructure\Storage\Processor\Image\Exception\TempFileCreationFailedException
      */
     public function process(FileInterface $file): FileInterface
     {
@@ -255,8 +262,9 @@ class ImageProcessor implements ProcessorInterface
             } else {
                 $storage->writeStream(
                     $path,
+                    /** @phpstan-ignore method.notFound, class.notFound */
                     StreamWrapper::getResource($this->image->stream($file->extension(), $this->quality)),
-                    new Config()
+                    new Config(),
                 );
             }
 
@@ -278,6 +286,7 @@ class ImageProcessor implements ProcessorInterface
     /**
      * @param \PhpCollective\Infrastructure\Storage\FileInterface $file File
      * @param string $path Path
+     *
      * @return void
      */
     protected function optimizeAndStore(FileInterface $file, string $path): void
@@ -301,7 +310,7 @@ class ImageProcessor implements ProcessorInterface
         $storage->writeStream(
             $path,
             $optimizerOutputHandler,
-            new Config()
+            new Config(),
         );
 
         // Cleanup
@@ -313,7 +322,7 @@ class ImageProcessor implements ProcessorInterface
         unset(
             $optimizerOutputHandler,
             $optimizerTempFile,
-            $optimizerOutput
+            $optimizerOutput,
         );
     }
 }

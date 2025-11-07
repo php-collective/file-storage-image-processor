@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types = 1);
 
 /**
  * Copyright (c) Florian Krämer (https://florian-kraemer.net)
@@ -7,12 +7,10 @@
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) Florian Krämer (https://florian-kraemer.net)
- * @author    Florian Krämer
- * @link      https://github.com/Phauthentic
- * @license   https://opensource.org/licenses/MIT MIT License
+ * @author Florian Krämer
+ * @link https://github.com/Phauthentic
+ * @license https://opensource.org/licenses/MIT MIT License
  */
-
-declare(strict_types=1);
 
 namespace PhpCollective\Test\TestCase\Processor\Image;
 
@@ -33,7 +31,7 @@ class OperationsTest extends TestCase
         $imageMock = $this->getMockBuilder(Image::class)
             ->disableOriginalConstructor()
             ->onlyMethods([
-                'resize'
+                'resize',
             ])
             ->getMock();
 
@@ -54,7 +52,7 @@ class OperationsTest extends TestCase
         $imageMock = $this->getMockBuilder(Image::class)
             ->disableOriginalConstructor()
             ->onlyMethods([
-                'scale'
+                'scale',
             ])
             ->getMock();
 
@@ -75,7 +73,7 @@ class OperationsTest extends TestCase
         $imageMock = $this->getMockBuilder(Image::class)
             ->disableOriginalConstructor()
             ->onlyMethods([
-                'rotate'
+                'rotate',
             ])
             ->getMock();
 
@@ -100,7 +98,7 @@ class OperationsTest extends TestCase
         $imageMock = $this->getMockBuilder(Image::class)
             ->disableOriginalConstructor()
             ->onlyMethods([
-                'sharpen'
+                'sharpen',
             ])
             ->getMock();
 
@@ -125,7 +123,7 @@ class OperationsTest extends TestCase
         $imageMock = $this->getMockBuilder(Image::class)
             ->disableOriginalConstructor()
             ->onlyMethods([
-                'cover'
+                'cover',
             ])
             ->getMock();
 
@@ -150,7 +148,7 @@ class OperationsTest extends TestCase
         $imageMock = $this->getMockBuilder(Image::class)
             ->disableOriginalConstructor()
             ->onlyMethods([
-                'crop'
+                'crop',
             ])
             ->getMock();
 

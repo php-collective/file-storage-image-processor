@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types = 1);
 
 /**
  * Copyright (c) Florian Krämer (https://florian-kraemer.net)
@@ -7,12 +7,10 @@
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) Florian Krämer (https://florian-kraemer.net)
- * @author    Florian Krämer
- * @link      https://github.com/Phauthentic
- * @license   https://opensource.org/licenses/MIT MIT License
+ * @author Florian Krämer
+ * @link https://github.com/Phauthentic
+ * @license https://opensource.org/licenses/MIT MIT License
  */
-
-declare(strict_types=1);
 
 namespace PhpCollective\Test\TestCase\Processor\Image;
 
@@ -55,48 +53,48 @@ class ImageVariantTest extends TestCase
                     'width' => 200,
                     'height' => 200,
                     'aspectRatio' => true,
-                    'preventUpscale' => false
+                    'preventUpscale' => false,
                 ],
                 'flipHorizontal' => [
-                    'direction' => 'h'
+                    'direction' => 'h',
                 ],
                 'flipVertical' => [
-                    'direction' => 'v'
+                    'direction' => 'v',
                 ],
                 'flip' => [
-                    'direction' => 'v'
+                    'direction' => 'v',
                 ],
                 'heighten' => [
                     'height' => 200,
-                    'preventUpscale' => false
+                    'preventUpscale' => false,
                 ],
                 'widen' => [
                     'width' => 200,
-                    'preventUpscale' => false
+                    'preventUpscale' => false,
                 ],
                 'crop' => [
                     'width' => 200,
                     'height' => 200,
                     'x' => null,
-                    'y' => null
+                    'y' => null,
                 ],
                 'fit' => [
                     'width' => 200,
                     'height' => 200,
                     'callback' => null,
                     'preventUpscale' => false,
-                    'position' => 'center'
+                    'position' => 'center',
                 ],
                 'rotate' => [
-                    'angle' => 90
+                    'angle' => 90,
                 ],
                 'sharpen' => [
-                    'amount' => 90
-                ]
+                    'amount' => 90,
+                ],
             ],
             'path' => '/',
             'url' => '',
-            'optimize' => true
+            'optimize' => true,
         ];
         $result = $variant->toArray();
 

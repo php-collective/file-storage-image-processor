@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types = 1);
 
 /**
  * Copyright (c) Florian Krämer (https://florian-kraemer.net)
@@ -7,12 +7,10 @@
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright Copyright (c) Florian Krämer (https://florian-kraemer.net)
- * @author    Florian Krämer
- * @link      https://github.com/Phauthentic
- * @license   https://opensource.org/licenses/MIT MIT License
+ * @author Florian Krämer
+ * @link https://github.com/Phauthentic
+ * @license https://opensource.org/licenses/MIT MIT License
  */
-
-declare(strict_types=1);
 
 namespace PhpCollective\Test\TestCase\Processor\Image;
 
@@ -22,10 +20,9 @@ use PhpCollective\Infrastructure\Storage\File;
 use PhpCollective\Infrastructure\Storage\FileFactory;
 use PhpCollective\Infrastructure\Storage\FileStorageInterface;
 use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilder;
-use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor;
+use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
 use PhpCollective\Test\TestCase\TestCase;
-use TestApp\Image;
 
 /**
  * ImageProcessorTest
@@ -47,7 +44,7 @@ class ImageProcessorTest extends TestCase
         $processor = new ImageProcessor(
             $fileStorage,
             $pathBuilder,
-            $imageManager
+            $imageManager,
         );
 
         $fileOnDisk = $this->getFixtureFile('titus.jpg');
