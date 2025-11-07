@@ -237,7 +237,7 @@ class ImageVariant extends Variant
         bool $preventUpscale = false,
         string $position = 'center'
     ): self {
-        $this->operations['fit'] = [
+        $this->operations['cover'] = [
             'width' => $width,
             'height' => $height,
             'callback' => $callback,

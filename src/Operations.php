@@ -278,6 +278,6 @@ class Operations
             );
         }
 
-        $arguments['callable']($this->image, $arguments);
+        $arguments['callback']($this->image, $arguments);
     }
 }
