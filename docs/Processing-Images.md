@@ -4,7 +4,7 @@
 use PhpCollective\Infrastructure\Storage\FileFactory;
 use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilder;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor;
-use PhpCollective\Infrastructure\Storage\Processor\Image\ImageManipulationCollection;
+use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
 use PhpCollective\Infrastructure\Storage\FileStorage;
 use PhpCollective\Infrastructure\Storage\StorageAdapterFactory;
 use PhpCollective\Infrastructure\Storage\StorageService;
@@ -25,9 +25,9 @@ $fileStorage = new FileStorage(
     $pathBuilder
 );
 
-$imageManager = new ImageManager([
-    'driver' => 'gd'
-]);
+$imageManager = new ImageManager(
+    new \Intervention\Image\Drivers\Gd\Driver()
+);
 
 $imageProcessor = new ImageProcessor(
     $fileStorage,
@@ -50,19 +50,35 @@ $file = $fileStorage->store($file);
  * Creating manipulated versions of the file
  ******************************************************************************/
 
-$collection = ImageManipulationCollection::create();
+$collection = ImageVariantCollection::create();
+
+// Resize with aspect ratio preservation (recommended for most cases)
+$collection->addNew('thumbnail')
+    ->scale(300, 300)  // Scales to fit within 300x300, maintains aspect ratio
+    ->optimize();
+
+// Resize to exact dimensions (stretches image)
 $collection->addNew('resizeAndFlip')
     ->flipHorizontal()
-    ->resize(300, 300)
+    ->resize(300, 300)  // Exact 300x300, may distort
     ->optimize();
+
+// Crop to exact dimensions
 $collection->addNew('crop')
     ->crop(100, 100);
 
-$file = $file->withManipulations($collection->toArray());
+$file = $file->withVariants($collection->toArray());
 
+// Process ALL variants (default behavior - empty array processes everything)
 $file = $imageProcessor
-    ->processOnlyTheseVersions([
-        //'resizeAndFlip'
-    ])
+    ->processOnlyTheseVariants([])
     ->process($file);
+
+// OR: Process only specific variants (useful for re-generating single variants)
+// $file = $imageProcessor
+//     ->processOnlyTheseVariants(['thumbnail', 'crop'])
+//     ->process($file);
+
+// OR: Skip the filter entirely to process all
+// $file = $imageProcessor->process($file);
 ```

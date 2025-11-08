@@ -73,7 +73,6 @@ class ImageVariantCollectionTest extends TestCase
                     'resize' => [
                         'width' => 300,
                         'height' => 300,
-                        'aspectRatio' => true,
                         'preventUpscale' => false,
                     ],
                 ],
@@ -92,7 +91,7 @@ class ImageVariantCollectionTest extends TestCase
         $collection2->remove('resizeAndFlip');
         $this->assertFalse($collection2->has('resizeAndFlip'));
 
-        $expected = '{"resizeAndFlip":{"operations":{"flipHorizontal":{"direction":"h"},"resize":{"width":300,"height":300,"aspectRatio":true,"preventUpscale":false}},"path":"","url":"","optimize":true}}';
+        $expected = '{"resizeAndFlip":{"operations":{"flipHorizontal":{"direction":"h"},"resize":{"width":300,"height":300,"preventUpscale":false}},"path":"","url":"","optimize":true}}';
         $result = json_encode($collection);
         $this->assertEquals($expected, $result);
     }

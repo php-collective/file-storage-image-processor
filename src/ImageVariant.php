@@ -71,14 +71,14 @@ class ImageVariant extends Variant
     }
 
     /**
-     * @param int $height Width
-     * @param int|null $width Height
+     * @param int $width Width
+     * @param int $height Height
      * @param int|null $x X
      * @param int|null $y Y
      *
      * @return $this
      */
-    public function crop(int $height, ?int $width = null, ?int $x = null, ?int $y = null)
+    public function crop(int $width, int $height, ?int $x = null, ?int $y = null)
     {
         $this->operations['crop'] = [
             'width' => $width,
@@ -151,19 +151,39 @@ class ImageVariant extends Variant
     }
 
     /**
+     * Resizes the image to exact dimensions (does not preserve aspect ratio)
+     *
      * @param int $width Width
      * @param int $height Height
-     * @param bool $aspectRatio Keeps the aspect ratio
      * @param bool $preventUpscale Prevents upscaling
      *
      * @return $this
      */
-    public function resize(int $width, int $height, bool $aspectRatio = true, bool $preventUpscale = false)
+    public function resize(int $width, int $height, bool $preventUpscale = false)
     {
         $this->operations['resize'] = [
             'width' => $width,
             'height' => $height,
-            'aspectRatio' => $aspectRatio,
+            'preventUpscale' => $preventUpscale,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Scales the image while preserving aspect ratio
+     *
+     * @param int $width Width
+     * @param int $height Height
+     * @param bool $preventUpscale Prevents upscaling
+     *
+     * @return $this
+     */
+    public function scale(int $width, int $height, bool $preventUpscale = false)
+    {
+        $this->operations['scale'] = [
+            'width' => $width,
+            'height' => $height,
             'preventUpscale' => $preventUpscale,
         ];
 

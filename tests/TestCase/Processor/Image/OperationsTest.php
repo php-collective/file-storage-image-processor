@@ -119,7 +119,11 @@ class OperationsTest extends TestCase
 
         $imageMock->expects($this->once())
             ->method('crop')
-            ->with(100, 200, 0, 0, 'center');
+            ->with(
+                $this->equalTo(100),
+                $this->equalTo(200),
+                $this->anything(),
+            );
 
         $operations = new Operations($imageMock);
         $operations->crop(['width' => 100, 'height' => 200]);

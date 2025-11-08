@@ -52,7 +52,6 @@ class ImageVariantTest extends TestCase
                 'resize' => [
                     'width' => 200,
                     'height' => 200,
-                    'aspectRatio' => true,
                     'preventUpscale' => false,
                 ],
                 'flipHorizontal' => [

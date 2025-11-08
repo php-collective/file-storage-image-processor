@@ -14,7 +14,6 @@
 
 namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
-use GuzzleHttp\Psr7\StreamWrapper;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Interfaces\ImageInterface;
 use InvalidArgumentException;
@@ -260,10 +259,10 @@ class ImageProcessor implements ProcessorInterface
             if (isset($data['optimize']) && $data['optimize'] === true) {
                 $this->optimizeAndStore($file, $path);
             } else {
+                $encoded = $this->image->encodeByExtension($file->extension(), $this->quality);
                 $storage->writeStream(
                     $path,
-                    /** @phpstan-ignore method.notFound, class.notFound */
-                    StreamWrapper::getResource($this->image->stream($file->extension(), $this->quality)),
+                    $encoded->toFilePointer(),
                     new Config(),
                 );
             }
@@ -293,9 +292,8 @@ class ImageProcessor implements ProcessorInterface
     {
         $storage = $this->storageHandler->getStorage($file->storage());
 
-        // We need more tmp files because the optimizer likes to write
-        // and read the files from disk, not from a stream. :(
-        //FIXME Use memory/stream instead?
+        // We need temp files because the optimizer requires file paths
+        // rather than streams for compatibility with various optimization tools
         $optimizerTempFile = TemporaryFile::create();
         $optimizerOutput = TemporaryFile::create();
 

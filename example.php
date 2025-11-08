@@ -67,17 +67,17 @@ $pathBuilder = new PathBuilder();
 
 $fileStorage = new FileStorage(
     $storageService,
-    $pathBuilder
+    $pathBuilder,
 );
 
-$imageManager = new ImageManager([
-    'driver' => 'gd'
-]);
+$imageManager = new ImageManager(
+    new \Intervention\Image\Drivers\Gd\Driver()
+);
 
 $imageProcessor = new ImageProcessor(
     $fileStorage,
     $pathBuilder,
-    $imageManager
+    $imageManager,
 );
 
 /*******************************************************************************
@@ -94,7 +94,7 @@ $file = FileFactory::fromDisk('./tests/Fixtures/titus.jpg', 'local')
     ->belongsToModel('User', '1')
     ->withMetadata([
         'one' => 'two',
-        'two' => 'one'
+        'two' => 'one',
     ])
     ->withMetadataKey('bar', 'foo');
 
@@ -108,20 +108,52 @@ echo PHP_EOL . PHP_EOL;
  ******************************************************************************/
 
 $collection = ImageVariantCollection::create();
+
+// Resize with aspect ratio preservation (recommended for most cases)
+$collection->addNew('thumbnail')
+    ->scale(300, 300)  // Scales to fit within 300x300, maintains aspect ratio
+    ->optimize();
+
+// Resize to exact dimensions (stretches image)
 $collection->addNew('resizeAndFlip')
     ->flipHorizontal()
-    ->resize(300, 300)
+    ->resize(300, 300)  // Exact 300x300, may distort
     ->optimize();
+
+// Crop to exact dimensions
 $collection->addNew('crop')
     ->crop(100, 100);
 
 $file = $file->withVariants($collection->toArray());
 
-$file = $imageProcessor
-    ->processOnlyTheseVariants([
-        //'resizeAndFlip'
-    ])
-    ->process($file);
+/*******************************************************************************
+ * Processing variants
+ *
+ * You can either:
+ * 1. Process all variants at once (default)
+ * 2. Process only specific variants (useful for progressive loading or updates)
+ ******************************************************************************/
+
+// Option 1: Process ALL variants
+$file = $imageProcessor->process($file);
+
+// Option 2: Process only specific variants (uncomment to use)
+// $file = $imageProcessor
+//     ->processOnlyTheseVariants(['thumbnail', 'crop'])
+//     ->process($file);
+
+// Option 3: Process in stages (quick preview, then full processing)
+// Step 1: Fast variants first
+// $file = $imageProcessor
+//     ->processOnlyTheseVariants(['thumbnail'])
+//     ->process($file);
+//
+// displayPreview($file); // Show user something immediately
+//
+// Step 2: Process remaining variants
+// $file = $imageProcessor
+//     ->processOnlyTheseVariants(['resizeAndFlip', 'crop'])
+//     ->process($file);
 
 echo var_export($file->toArray(), true);
 echo PHP_EOL;

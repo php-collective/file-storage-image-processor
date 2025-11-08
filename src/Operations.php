@@ -148,10 +148,16 @@ class Operations
         $arguments += ['x' => null, 'y' => null, 'position' => static::POSITION_CENTER];
         $height = (int)$arguments['height'];
         $width = (int)$arguments['width'];
-        $x = $arguments['x'] ? (int)$arguments['x'] : 0;
-        $y = $arguments['y'] ? (int)$arguments['y'] : 0;
 
-        $this->image->crop($width, $height, $x, $y, $arguments['position']);
+        // If x and y are explicitly provided, use coordinate-based cropping
+        if ($arguments['x'] !== null && $arguments['y'] !== null) {
+            $x = (int)$arguments['x'];
+            $y = (int)$arguments['y'];
+            $this->image->crop($width, $height, $x, $y, position: $arguments['position']);
+        } else {
+            // Use position-based cropping only
+            $this->image->crop($width, $height, position: $arguments['position']);
+        }
     }
 
     /**
@@ -251,14 +257,6 @@ class Operations
             throw new InvalidArgumentException(
                 'Missing height or width',
             );
-        }
-
-        // Deprecated: Coming from old API
-        $aspectRatio = $arguments['aspectRatio'] ?? null;
-        if ($aspectRatio !== null) {
-            $this->scale($arguments);
-
-            return;
         }
 
         $preventUpscale = $arguments['preventUpscale'] ?? false;
