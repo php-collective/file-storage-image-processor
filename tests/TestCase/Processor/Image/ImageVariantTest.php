@@ -78,18 +78,18 @@ class ImageVariantTest extends TestCase
                     'x' => null,
                     'y' => null,
                 ],
-                'fit' => [
-                    'width' => 200,
-                    'height' => 200,
-                    'callback' => null,
-                    'preventUpscale' => false,
-                    'position' => 'center',
-                ],
                 'rotate' => [
                     'angle' => 90,
                 ],
                 'sharpen' => [
                     'amount' => 90,
+                ],
+                'cover' => [
+                    'width' => 200,
+                    'height' => 200,
+                    'callback' => null,
+                    'preventUpscale' => false,
+                    'position' => 'center',
                 ],
             ],
             'path' => '/',

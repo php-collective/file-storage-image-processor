@@ -14,9 +14,9 @@
 
 namespace PhpCollective\Test\TestCase\Processor\Image;
 
+use Intervention\Image\Interfaces\ImageInterface;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Operations;
 use PhpCollective\Test\TestCase\TestCase;
-use TestApp\Image;
 
 /**
  * OperationsTest
@@ -28,19 +28,13 @@ class OperationsTest extends TestCase
      */
     public function testOperations(): void
     {
-        $imageMock = $this->getMockBuilder(Image::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods([
-                'resize',
-            ])
-            ->getMock();
-
-        $operations = new Operations($imageMock);
+        $imageMock = $this->createMock(ImageInterface::class);
 
         $imageMock->expects($this->once())
             ->method('resize')
             ->with(100, 100);
 
+        $operations = new Operations($imageMock);
         $operations->resize(['height' => 100, 'width' => 100]);
     }
 
@@ -49,19 +43,13 @@ class OperationsTest extends TestCase
      */
     public function testScale(): void
     {
-        $imageMock = $this->getMockBuilder(Image::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods([
-                'scale',
-            ])
-            ->getMock();
-
-        $operations = new Operations($imageMock);
+        $imageMock = $this->createMock(ImageInterface::class);
 
         $imageMock->expects($this->once())
             ->method('scale')
             ->with(100, 200);
 
+        $operations = new Operations($imageMock);
         $operations->scale(['height' => 200, 'width' => 100]);
     }
 
@@ -70,19 +58,13 @@ class OperationsTest extends TestCase
      */
     public function testRotate(): void
     {
-        $imageMock = $this->getMockBuilder(Image::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods([
-                'rotate',
-            ])
-            ->getMock();
-
-        $operations = new Operations($imageMock);
+        $imageMock = $this->createMock(ImageInterface::class);
 
         $imageMock->expects($this->once())
             ->method('rotate')
             ->with(90);
 
+        $operations = new Operations($imageMock);
         $operations->rotate(['angle' => 90]);
 
         $this->expectException(\InvalidArgumentException::class);
@@ -95,19 +77,13 @@ class OperationsTest extends TestCase
      */
     public function testSharpen(): void
     {
-        $imageMock = $this->getMockBuilder(Image::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods([
-                'sharpen',
-            ])
-            ->getMock();
-
-        $operations = new Operations($imageMock);
+        $imageMock = $this->createMock(ImageInterface::class);
 
         $imageMock->expects($this->once())
             ->method('sharpen')
             ->with(90);
 
+        $operations = new Operations($imageMock);
         $operations->sharpen(['amount' => 90]);
 
         $this->expectException(\InvalidArgumentException::class);
@@ -120,23 +96,17 @@ class OperationsTest extends TestCase
      */
     public function testCover(): void
     {
-        $imageMock = $this->getMockBuilder(Image::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods([
-                'cover',
-            ])
-            ->getMock();
-
-        $operations = new Operations($imageMock);
+        $imageMock = $this->createMock(ImageInterface::class);
 
         $imageMock->expects($this->once())
             ->method('cover')
-            ->with(100, 100);
+            ->with(100, 100, 'center');
 
+        $operations = new Operations($imageMock);
         $operations->cover(['width' => 100, 'height' => 100]);
 
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Missing width');
+        $this->expectExceptionMessage('Missing width or height');
         $operations->cover([]);
     }
 
@@ -145,19 +115,13 @@ class OperationsTest extends TestCase
      */
     public function testCrop(): void
     {
-        $imageMock = $this->getMockBuilder(Image::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods([
-                'crop',
-            ])
-            ->getMock();
-
-        $operations = new Operations($imageMock);
+        $imageMock = $this->createMock(ImageInterface::class);
 
         $imageMock->expects($this->once())
             ->method('crop')
-            ->with(100, 200);
+            ->with(100, 200, 0, 0, 'center');
 
+        $operations = new Operations($imageMock);
         $operations->crop(['width' => 100, 'height' => 200]);
 
         $this->expectException(\InvalidArgumentException::class);
