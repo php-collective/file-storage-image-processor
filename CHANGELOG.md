@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed compatibility with Intervention Image v3 crop operation using named parameters
 - Fixed `OperationsTest` to use proper mocking of `ImageInterface` instead of concrete class
+- Fixed `optimizeAndStore()` to explicitly encode image with file extension (resolves "No encoder found for empty file extension" error)
 - Updated all documentation examples to use correct Intervention Image v3 API
 
 ### Documentation

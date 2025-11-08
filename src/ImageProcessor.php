@@ -297,10 +297,13 @@ class ImageProcessor implements ProcessorInterface
         $optimizerTempFile = TemporaryFile::create();
         $optimizerOutput = TemporaryFile::create();
 
-        // Save the image to the tmp file
-        $this->image->save($optimizerTempFile, 90);
+        // Encode the image with the proper format and write to temp file
+        $encoded = $this->image->encodeByExtension($file->extension(), $this->quality);
+        file_put_contents($optimizerTempFile, (string)$encoded);
+
         // Optimize it and write it to another file
         $this->optimizer()->optimize($optimizerTempFile, $optimizerOutput);
+
         // Open a new stream for the storage system
         $optimizerOutputHandler = openFile($optimizerOutput, 'rb+');
 
