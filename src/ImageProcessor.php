@@ -15,6 +15,7 @@
 namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
 use Intervention\Image\ImageManager;
+use Intervention\Image\Interfaces\EncodedImageInterface;
 use Intervention\Image\Interfaces\ImageInterface;
 use InvalidArgumentException;
 use League\Flysystem\Config;
@@ -246,7 +247,7 @@ class ImageProcessor implements ProcessorInterface
                 continue;
             }
 
-            $this->image = $this->imageManager->read($tempFile);
+            $this->image = $this->imageManager->decodePath($tempFile);
             $operations = new Operations($this->image);
 
             // Apply the operations
@@ -259,12 +260,16 @@ class ImageProcessor implements ProcessorInterface
             if (isset($data['optimize']) && $data['optimize'] === true) {
                 $this->optimizeAndStore($file, $path);
             } else {
-                $encoded = $this->image->encodeByExtension($file->extension(), $this->quality);
+                $encoded = $this->encodeImage($file->extension());
+                $stream = openFile('php://temp', 'rb+');
+                fwrite($stream, (string)$encoded);
+                rewind($stream);
                 $storage->writeStream(
                     $path,
-                    $encoded->toFilePointer(),
+                    $stream,
                     new Config(),
                 );
+                fclose($stream);
             }
 
             $data['path'] = $path;
@@ -283,6 +288,38 @@ class ImageProcessor implements ProcessorInterface
     }
 
     /**
+     * Encodes the current image using the given file extension. Quality is only
+     * passed to encoders that accept it (jpg/jpeg/webp/avif/heic/tiff); for
+     * formats like png and gif passing it would trigger an unknown-named-arg
+     * error in intervention/image v4.
+     *
+     * @param string|null $extension File extension
+     *
+     * @throws \InvalidArgumentException If extension is empty
+     *
+     * @return \Intervention\Image\Interfaces\EncodedImageInterface
+     */
+    protected function encodeImage(?string $extension): EncodedImageInterface
+    {
+        if ($extension === null || $extension === '') {
+            throw new InvalidArgumentException('Cannot encode image without a file extension');
+        }
+
+        $extension = strtolower($extension);
+        $supportsQuality = in_array(
+            $extension,
+            ['jpg', 'jpeg', 'webp', 'avif', 'heic', 'tiff'],
+            true,
+        );
+
+        if ($supportsQuality) {
+            return $this->image->encodeUsingFileExtension($extension, quality: $this->quality);
+        }
+
+        return $this->image->encodeUsingFileExtension($extension);
+    }
+
+    /**
      * @param \PhpCollective\Infrastructure\Storage\FileInterface $file File
      * @param string $path Path
      *
@@ -298,7 +335,7 @@ class ImageProcessor implements ProcessorInterface
         $optimizerOutput = TemporaryFile::create();
 
         // Encode the image with the proper format and write to temp file
-        $encoded = $this->image->encodeByExtension($file->extension(), $this->quality);
+        $encoded = $this->encodeImage($file->extension());
         file_put_contents($optimizerTempFile, (string)$encoded);
 
         // Optimize it and write it to another file

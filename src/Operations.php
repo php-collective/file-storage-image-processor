@@ -14,6 +14,7 @@
 
 namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
+use Intervention\Image\Direction;
 use Intervention\Image\Interfaces\ImageInterface;
 use InvalidArgumentException;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOperationException;
@@ -21,7 +22,7 @@ use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOp
 /**
  * Operations
  *
- * @link https://image.intervention.io/v3
+ * @link https://image.intervention.io/v4
  */
 class Operations
 {
@@ -153,10 +154,10 @@ class Operations
         if ($arguments['x'] !== null && $arguments['y'] !== null) {
             $x = (int)$arguments['x'];
             $y = (int)$arguments['y'];
-            $this->image->crop($width, $height, $x, $y, position: $arguments['position']);
+            $this->image->crop($width, $height, $x, $y, alignment: $arguments['position']);
         } else {
             // Use position-based cropping only
-            $this->image->crop($width, $height, position: $arguments['position']);
+            $this->image->crop($width, $height, alignment: $arguments['position']);
         }
     }
 
@@ -202,12 +203,12 @@ class Operations
         }
 
         if ($arguments['direction'] === 'h') {
-            $this->image->flip();
+            $this->image->flip(Direction::HORIZONTAL);
 
             return;
         }
 
-        $this->image->flop();
+        $this->image->flip(Direction::VERTICAL);
     }
 
     /**
