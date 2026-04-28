@@ -288,6 +288,191 @@ class ImageVariant extends Variant
     }
 
     /**
+     * Auto-rotates the image based on EXIF orientation. Best placed first
+     * to normalise camera uploads before further operations.
+     *
+     * @return $this
+     */
+    public function orient()
+    {
+        $this->operations['orient'] = [];
+
+        return $this;
+    }
+
+    /**
+     * @param int $level Brightness level, -100 to 100
+     *
+     * @return $this
+     */
+    public function brightness(int $level)
+    {
+        $this->operations['brightness'] = ['level' => $level];
+
+        return $this;
+    }
+
+    /**
+     * @param int $level Contrast level, -100 to 100
+     *
+     * @return $this
+     */
+    public function contrast(int $level)
+    {
+        $this->operations['contrast'] = ['level' => $level];
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function grayscale()
+    {
+        $this->operations['grayscale'] = [];
+
+        return $this;
+    }
+
+    /**
+     * @param int $red Red shift, -100 to 100
+     * @param int $green Green shift, -100 to 100
+     * @param int $blue Blue shift, -100 to 100
+     *
+     * @return $this
+     */
+    public function colorize(int $red = 0, int $green = 0, int $blue = 0)
+    {
+        $this->operations['colorize'] = [
+            'red' => $red,
+            'green' => $green,
+            'blue' => $blue,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * @param int $level Blur level, 0 to 100
+     *
+     * @return $this
+     */
+    public function blur(int $level = 5)
+    {
+        $this->operations['blur'] = ['level' => $level];
+
+        return $this;
+    }
+
+    /**
+     * @param int $size Pixel block size
+     *
+     * @return $this
+     */
+    public function pixelate(int $size)
+    {
+        $this->operations['pixelate'] = ['size' => $size];
+
+        return $this;
+    }
+
+    /**
+     * @param int $tolerance Color tolerance for trimming, 0 to 100
+     *
+     * @return $this
+     */
+    public function trim(int $tolerance = 0)
+    {
+        $this->operations['trim'] = ['tolerance' => $tolerance];
+
+        return $this;
+    }
+
+    /**
+     * @param int $width Canvas width
+     * @param int $height Canvas height
+     * @param string|null $background Background color (hex or named)
+     * @param string $position Alignment of the original image
+     *
+     * @return $this
+     */
+    public function resizeCanvas(
+        int $width,
+        int $height,
+        ?string $background = null,
+        string $position = 'center',
+    ) {
+        $this->operations['resizeCanvas'] = [
+            'width' => $width,
+            'height' => $height,
+            'background' => $background,
+            'position' => $position,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * @param int $amount Padding in pixels (added on each side)
+     * @param string|null $background Background color
+     *
+     * @return $this
+     */
+    public function padding(int $amount, ?string $background = null)
+    {
+        $this->operations['padding'] = [
+            'amount' => $amount,
+            'background' => $background,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Inserts a watermark or overlay on top of the image.
+     *
+     * @param string $image Path to overlay image
+     * @param string $position Alignment, e.g. 'bottom-right'
+     * @param int $x Horizontal offset from alignment position
+     * @param int $y Vertical offset from alignment position
+     * @param float $opacity Opacity, 0.0 to 1.0
+     *
+     * @return $this
+     */
+    public function place(
+        string $image,
+        string $position = 'bottom-center',
+        int $x = 0,
+        int $y = 0,
+        float $opacity = 1.0,
+    ) {
+        $this->operations['place'] = [
+            'image' => $image,
+            'position' => $position,
+            'x' => $x,
+            'y' => $y,
+            'opacity' => $opacity,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Re-encode the variant in a different format than the source. Use this
+     * to e.g. generate WebP variants from JPEG uploads.
+     *
+     * @param string $format Target file extension, e.g. 'webp'
+     *
+     * @return $this
+     */
+    public function convert(string $format)
+    {
+        $this->operations['convert'] = ['format' => $format];
+
+        return $this;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(): array
