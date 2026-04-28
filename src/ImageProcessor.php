@@ -36,13 +36,48 @@ class ImageProcessor implements ProcessorInterface
     use OptimizerTrait;
 
     /**
+     * Default quality used when no per-format quality has been configured.
+     *
+     * @var int
+     */
+    public const DEFAULT_QUALITY = 90;
+
+    /**
+     * File extensions whose encoder accepts a `quality` named argument under
+     * intervention/image v4. Encoders for png/gif/bmp/ico do not accept it
+     * and would throw on an unknown named argument.
+     *
+     * @var array<int, string>
+     */
+    protected const QUALITY_AWARE_EXTENSIONS = [
+        'jpg',
+        'jpeg',
+        'pjpg',
+        'pjpeg',
+        'webp',
+        'avif',
+        'heic',
+        'heif',
+        'tif',
+        'tiff',
+        'jp2',
+        'j2k',
+    ];
+
+    /**
      * @var array<int, string>
      */
     protected array $mimeTypes = [
+        'image/avif',
+        'image/bmp',
         'image/gif',
-        'image/jpg',
+        'image/heic',
+        'image/heif',
         'image/jpeg',
+        'image/jpg',
         'image/png',
+        'image/tiff',
+        'image/webp',
     ];
 
     /**
@@ -76,11 +111,27 @@ class ImageProcessor implements ProcessorInterface
     protected ImageInterface $image;
 
     /**
-     * Quality setting for writing images
+     * Default quality used when no per-format override is configured.
      *
      * @var int
      */
-    protected int $quality = 90;
+    protected int $defaultQuality = self::DEFAULT_QUALITY;
+
+    /**
+     * Per-extension quality overrides, keyed by lower-cased file extension.
+     *
+     * @var array<string, int>
+     */
+    protected array $qualityMap = [];
+
+    /**
+     * Whether to strip EXIF/metadata when encoding output. Defaults to true
+     * for privacy and smaller file sizes; disable if downstream consumers
+     * rely on metadata such as orientation, ICC profile or copyright tags.
+     *
+     * @var bool
+     */
+    protected bool $stripExif = true;
 
     /**
      * @param \PhpCollective\Infrastructure\Storage\FileStorageInterface $storageHandler File Storage Handler
@@ -113,13 +164,66 @@ class ImageProcessor implements ProcessorInterface
     }
 
     /**
-     * @param int $quality Quality
+     * Sets the encoder quality. Pass an int (1-100) to apply a single value
+     * to every quality-aware format, or an array keyed by extension (e.g.
+     * `['webp' => 80, 'jpg' => 90]`) to use different qualities per format.
+     *
+     * @param array<string, int>|int $quality Quality
      *
      * @throws \InvalidArgumentException
      *
      * @return $this
      */
-    public function setQuality(int $quality)
+    public function setQuality(int|array $quality)
+    {
+        if (is_int($quality)) {
+            $this->assertValidQuality($quality);
+            $this->defaultQuality = $quality;
+            $this->qualityMap = [];
+
+            return $this;
+        }
+
+        $map = [];
+        foreach ($quality as $extension => $value) {
+            if ($extension === '') {
+                throw new InvalidArgumentException(
+                    'Quality map keys must be non-empty extension strings',
+                );
+            }
+            $intValue = (int)$value;
+            $this->assertValidQuality($intValue);
+            $map[strtolower($extension)] = $intValue;
+        }
+
+        $this->qualityMap = $map;
+
+        return $this;
+    }
+
+    /**
+     * Toggles whether EXIF/metadata is stripped from encoded output. Only
+     * affects encoders that support it (jpg/jpeg/webp/avif/heic/tiff/jp2).
+     *
+     * @param bool $strip Whether to strip metadata
+     *
+     * @return $this
+     */
+    public function setStripExif(bool $strip)
+    {
+        $this->stripExif = $strip;
+
+        return $this;
+    }
+
+    /**
+     * @param int $quality Quality
+     *
+     * @throws \InvalidArgumentException
+     *
+     * @return void
+     */
+    protected function assertValidQuality(int $quality): void
     {
         if ($quality > 100 || $quality <= 0) {
             throw new InvalidArgumentException(sprintf(
@@ -127,10 +231,16 @@ class ImageProcessor implements ProcessorInterface
                 (string)$quality,
             ));
         }
+    }
 
-        $this->quality = $quality;
-
-        return $this;
+    /**
+     * @param string $extension File extension (lower-case)
+     *
+     * @return int
+     */
+    protected function qualityFor(string $extension): int
+    {
+        return $this->qualityMap[$extension] ?? $this->defaultQuality;
     }
 
     /**
@@ -255,12 +365,13 @@ class ImageProcessor implements ProcessorInterface
                 $operations->{$operation}($arguments);
             }
 
-            $path = $this->pathBuilder->pathForVariant($file, $variant);
+            $extension = $operations->getOutputFormat() ?? $file->extension();
+            $path = $this->pathForVariant($file, $variant, $operations->getOutputFormat());
 
             if (isset($data['optimize']) && $data['optimize'] === true) {
-                $this->optimizeAndStore($file, $path);
+                $this->optimizeAndStore($file, $path, $extension);
             } else {
-                $encoded = $this->encodeImage($file->extension());
+                $encoded = $this->encodeImage($extension);
                 $stream = openFile('php://temp', 'rb+');
                 fwrite($stream, (string)$encoded);
                 rewind($stream);
@@ -288,10 +399,32 @@ class ImageProcessor implements ProcessorInterface
     }
 
     /**
-     * Encodes the current image using the given file extension. Quality is only
-     * passed to encoders that accept it (jpg/jpeg/webp/avif/heic/tiff); for
-     * formats like png and gif passing it would trigger an unknown-named-arg
-     * error in intervention/image v4.
+     * Returns the variant's storage path. When a `convert` operation requested
+     * a different output format the source extension in the built path is
+     * swapped for the requested one so the stored file's extension matches
+     * its actual encoding.
+     *
+     * @param \PhpCollective\Infrastructure\Storage\FileInterface $file File
+     * @param string $variant Variant name
+     * @param string|null $outputFormat Override extension or null
+     *
+     * @return string
+     */
+    protected function pathForVariant(FileInterface $file, string $variant, ?string $outputFormat): string
+    {
+        $path = $this->pathBuilder->pathForVariant($file, $variant);
+        if ($outputFormat === null || $outputFormat === '') {
+            return $path;
+        }
+
+        return preg_replace('/\.[^.\/\\\]+$/', '.' . $outputFormat, $path) ?? $path;
+    }
+
+    /**
+     * Encodes the current image using the given file extension. `quality` and
+     * `strip` are only forwarded to encoders that accept them; for png/gif/bmp
+     * passing them would trigger an unknown-named-argument error in
+     * intervention/image v4.
      *
      * @param string|null $extension File extension
      *
@@ -306,14 +439,12 @@ class ImageProcessor implements ProcessorInterface
         }
 
         $extension = strtolower($extension);
-        $supportsQuality = in_array(
-            $extension,
-            ['jpg', 'jpeg', 'webp', 'avif', 'heic', 'tiff'],
-            true,
-        );
-
-        if ($supportsQuality) {
-            return $this->image->encodeUsingFileExtension($extension, quality: $this->quality);
+        if (in_array($extension, self::QUALITY_AWARE_EXTENSIONS, true)) {
+            return $this->image->encodeUsingFileExtension(
+                $extension,
+                quality: $this->qualityFor($extension),
+                strip: $this->stripExif,
+            );
         }
 
         return $this->image->encodeUsingFileExtension($extension);
@@ -322,10 +453,11 @@ class ImageProcessor implements ProcessorInterface
     /**
      * @param \PhpCollective\Infrastructure\Storage\FileInterface $file File
      * @param string $path Path
+     * @param string|null $extension Output file extension
      *
      * @return void
      */
-    protected function optimizeAndStore(FileInterface $file, string $path): void
+    protected function optimizeAndStore(FileInterface $file, string $path, ?string $extension = null): void
     {
         $storage = $this->storageHandler->getStorage($file->storage());
 
@@ -335,7 +467,7 @@ class ImageProcessor implements ProcessorInterface
         $optimizerOutput = TemporaryFile::create();
 
         // Encode the image with the proper format and write to temp file
-        $encoded = $this->encodeImage($file->extension());
+        $encoded = $this->encodeImage($extension ?? $file->extension());
         file_put_contents($optimizerTempFile, (string)$encoded);
 
         // Optimize it and write it to another file
