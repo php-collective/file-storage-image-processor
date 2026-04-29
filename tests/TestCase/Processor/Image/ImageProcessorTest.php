@@ -137,6 +137,37 @@ class ImageProcessorTest extends TestCase
     /**
      * @return void
      */
+    public function testSetMimeTypesAcceptsList(): void
+    {
+        $processor = $this->buildProcessor();
+        $this->assertSame($processor, $processor->setMimeTypes(['image/jpeg', 'image/png']));
+    }
+
+    /**
+     * @return void
+     */
+    public function testSetMimeTypesRejectsEmptyList(): void
+    {
+        $processor = $this->buildProcessor();
+
+        $this->expectException(InvalidArgumentException::class);
+        $processor->setMimeTypes([]);
+    }
+
+    /**
+     * @return void
+     */
+    public function testSetMimeTypesRejectsEmptyEntry(): void
+    {
+        $processor = $this->buildProcessor();
+
+        $this->expectException(InvalidArgumentException::class);
+        $processor->setMimeTypes(['image/jpeg', '']);
+    }
+
+    /**
+     * @return void
+     */
     public function testConvertOperationSwapsVariantPathExtension(): void
     {
         $processor = $this->buildProcessor();

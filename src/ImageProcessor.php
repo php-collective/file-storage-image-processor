@@ -19,6 +19,7 @@ use Intervention\Image\Interfaces\EncodedImageInterface;
 use Intervention\Image\Interfaces\ImageInterface;
 use InvalidArgumentException;
 use League\Flysystem\Config;
+use League\Flysystem\FilesystemAdapter;
 use PhpCollective\Infrastructure\Storage\FileInterface;
 use PhpCollective\Infrastructure\Storage\FileStorageInterface;
 use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilderInterface;
@@ -105,11 +106,6 @@ class ImageProcessor implements ProcessorInterface
      * @var \Intervention\Image\ImageManager
      */
     protected ImageManager $imageManager;
-
-    /**
-     * @var \Intervention\Image\Interfaces\ImageInterface
-     */
-    protected ImageInterface $image;
 
     /**
      * Default quality used when no per-format override is configured.
@@ -218,13 +214,31 @@ class ImageProcessor implements ProcessorInterface
     }
 
     /**
-     * @param array<int, string> $mimeTypes Mime Type List
+     * Replaces the list of MIME types the processor will operate on.
+     * Files with any other MIME type are returned untouched by `process()`.
+     * Useful when the application wants to widen support to types the
+     * underlying intervention/image driver accepts but that aren't in
+     * the default allowlist, or to narrow it for security reasons.
+     *
+     * @param array<int, string> $mimeTypes MIME Type List, e.g. `['image/jpeg', 'image/png']`
+     *
+     * @throws \InvalidArgumentException When the list is empty or any entry is not a non-empty string
      *
      * @return $this
      */
-    protected function setMimeTypes(array $mimeTypes)
+    public function setMimeTypes(array $mimeTypes)
     {
-        $this->mimeTypes = $mimeTypes;
+        if ($mimeTypes === []) {
+            throw new InvalidArgumentException('MIME type list must not be empty');
+        }
+
+        foreach ($mimeTypes as $type) {
+            if ($type === '') {
+                throw new InvalidArgumentException('MIME type list must not contain empty strings');
+            }
+        }
+
+        $this->mimeTypes = array_values($mimeTypes);
 
         return $this;
     }
@@ -364,32 +378,41 @@ class ImageProcessor implements ProcessorInterface
     }
 
     /**
-     * Read the data from the files resource if (still) present,
-     * if not fetch it from the storage backend and write the data
-     * to the stream of the temp file
+     * Copies the source file's bytes into the given temp-file stream,
+     * preferring the in-memory resource on the file object when present
+     * and falling back to a fresh read from storage. Closes the temp
+     * stream regardless of outcome and throws when the copy fails so
+     * callers don't have to remember to inspect the return value.
      *
      * @param \PhpCollective\Infrastructure\Storage\FileInterface $file File
      * @param resource $tempFileStream Temp File Stream Resource
+     * @param string $tempFile Path to the destination temp file (used in the error message)
      *
-     * @return int|bool False on error
+     * @throws \PhpCollective\Infrastructure\Storage\Processor\Image\Exception\TempFileCreationFailedException
+     *
+     * @return void
      */
-    protected function copyOriginalFileData(FileInterface $file, $tempFileStream)
+    protected function copyOriginalFileData(FileInterface $file, $tempFileStream, string $tempFile): void
     {
         $stream = $file->resource();
-        $storage = $this->storageHandler->getStorage($file->storage());
-
         if ($stream === null) {
+            $storage = $this->storageHandler->getStorage($file->storage());
             $stream = $storage->readStream($file->path());
         } else {
             rewind($stream);
         }
-        $result = stream_copy_to_stream(
-            $stream,
-            $tempFileStream,
-        );
-        fclose($tempFileStream);
 
-        return $result;
+        try {
+            $result = stream_copy_to_stream($stream, $tempFileStream);
+        } finally {
+            fclose($tempFileStream);
+        }
+
+        if ($result === false) {
+            $this->safeUnlink($tempFile);
+
+            throw TempFileCreationFailedException::withFilename($tempFile);
+        }
     }
 
     /**
@@ -413,8 +436,6 @@ class ImageProcessor implements ProcessorInterface
 
     /**
      * @inheritDoc
-     *
-     * @throws \PhpCollective\Infrastructure\Storage\Processor\Image\Exception\TempFileCreationFailedException
      */
     public function process(FileInterface $file): FileInterface
     {
@@ -424,87 +445,148 @@ class ImageProcessor implements ProcessorInterface
 
         $storage = $this->storageHandler->getStorage($file->storage());
 
-        // Create a local tmp file on the processing system / machine
         $tempFile = TemporaryFile::create();
         $tempFileStream = openFile($tempFile, 'wb+');
 
-        // Read the data from the files resource if (still) present,
-        // if not fetch it from the storage backend and write the data
-        // to the stream of the temp file
-        $result = $this->copyOriginalFileData($file, $tempFileStream);
+        $this->copyOriginalFileData($file, $tempFileStream, $tempFile);
 
-        // Stop if the temp file could not be generated
-        if ($result === false) {
-            throw TempFileCreationFailedException::withFilename($tempFile);
-        }
-
-        // Iterate over the variants described as an array
-        foreach ($file->variants() as $variant => $data) {
-            if (!$this->shouldProcessVariant($variant, $data)) {
-                continue;
-            }
-
-            $this->image = $this->imageManager->decodePath($tempFile);
-
-            // Capture the source ICC profile so we can re-apply it after
-            // operations run, in case any modifier strips it. profile()
-            // throws when the source has no profile, which we treat as a
-            // no-op for preservation purposes.
-            $sourceProfile = null;
-            if ($this->preserveProfile) {
-                try {
-                    $sourceProfile = $this->image->profile();
-                } catch (Throwable) {
-                    $sourceProfile = null;
+        try {
+            foreach ($file->variants() as $variant => $data) {
+                if (!$this->shouldProcessVariant($variant, $data)) {
+                    continue;
                 }
+
+                $file = $this->processVariant($file, $variant, $data, $tempFile, $storage);
             }
-
-            $operations = new Operations($this->image);
-
-            // Apply the operations
-            foreach ($data['operations'] as $operation => $arguments) {
-                $operations->{$operation}($arguments);
-            }
-
-            if ($sourceProfile !== null) {
-                try {
-                    $this->image->setProfile($sourceProfile);
-                } catch (Throwable) {
-                    // Driver doesn't support profiles (e.g. GD); silently skip
-                }
-            }
-
-            $extension = $operations->getOutputFormat() ?? $file->extension();
-            $path = $this->pathForVariant($file, $variant, $operations->getOutputFormat());
-
-            if (isset($data['optimize']) && $data['optimize'] === true) {
-                $this->optimizeAndStore($file, $path, $extension);
-            } else {
-                $encoded = $this->encodeImage($extension);
-                $stream = openFile('php://temp', 'rb+');
-                fwrite($stream, (string)$encoded);
-                rewind($stream);
-                $storage->writeStream(
-                    $path,
-                    $stream,
-                    new Config(),
-                );
-                fclose($stream);
-            }
-
-            $data['path'] = $path;
-            $file = $file->withVariant($variant, $data);
-
-            if ($this->urlBuilder !== null) {
-                $data['url'] = $this->urlBuilder->urlForVariant($file, $variant);
-            }
-
-            $file = $file->withVariant($variant, $data);
+        } finally {
+            $this->safeUnlink($tempFile);
         }
-
-        unlink($tempFile);
 
         return $file;
+    }
+
+    /**
+     * Decodes the source temp file, runs the variant's operations, encodes
+     * the result and writes it to storage. Returns the file with the
+     * variant's path and URL filled in.
+     *
+     * @param \PhpCollective\Infrastructure\Storage\FileInterface $file File
+     * @param string $variant Variant name
+     * @param array<string, mixed> $data Variant config
+     * @param string $tempFile Source temp file path
+     * @param \League\Flysystem\FilesystemAdapter $storage Storage adapter
+     *
+     * @return \PhpCollective\Infrastructure\Storage\FileInterface
+     */
+    protected function processVariant(
+        FileInterface $file,
+        string $variant,
+        array $data,
+        string $tempFile,
+        FilesystemAdapter $storage,
+    ): FileInterface {
+        $image = $this->imageManager->decodePath($tempFile);
+
+        $sourceProfile = $this->preserveProfile ? $this->captureProfile($image) : null;
+
+        $operations = new Operations($image);
+        foreach ($data['operations'] as $operation => $arguments) {
+            $operations->{$operation}($arguments);
+        }
+
+        if ($sourceProfile !== null) {
+            $this->restoreProfile($image, $sourceProfile);
+        }
+
+        $outputFormat = $operations->getOutputFormat();
+        $extension = $outputFormat ?? $file->extension();
+        $path = $this->pathForVariant($file, $variant, $outputFormat);
+
+        if (isset($data['optimize']) && $data['optimize'] === true) {
+            $this->optimizeAndStore($image, $file, $path, $extension);
+        } else {
+            $this->encodeAndStore($image, $extension, $path, $storage);
+        }
+
+        $data['path'] = $path;
+        $file = $file->withVariant($variant, $data);
+
+        if ($this->urlBuilder !== null) {
+            $data['url'] = $this->urlBuilder->urlForVariant($file, $variant);
+            $file = $file->withVariant($variant, $data);
+        }
+
+        return $file;
+    }
+
+    /**
+     * Captures the source image's ICC profile so we can re-apply it after
+     * operations run. profile() throws when the source has no profile —
+     * for preservation purposes we treat that as "nothing to restore".
+     *
+     * @param \Intervention\Image\Interfaces\ImageInterface $image Image
+     *
+     * @return mixed
+     */
+    protected function captureProfile(ImageInterface $image): mixed
+    {
+        try {
+            return $image->profile();
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @param \Intervention\Image\Interfaces\ImageInterface $image Image
+     * @param mixed $profile Profile to restore
+     *
+     * @return void
+     */
+    protected function restoreProfile(ImageInterface $image, mixed $profile): void
+    {
+        try {
+            $image->setProfile($profile);
+        } catch (Throwable) {
+            // Driver doesn't support profiles (e.g. GD); silently skip
+        }
+    }
+
+    /**
+     * @param \Intervention\Image\Interfaces\ImageInterface $image Image
+     * @param string|null $extension File extension
+     * @param string $path Destination path in storage
+     * @param \League\Flysystem\FilesystemAdapter $storage Storage adapter
+     *
+     * @return void
+     */
+    protected function encodeAndStore(
+        ImageInterface $image,
+        ?string $extension,
+        string $path,
+        FilesystemAdapter $storage,
+    ): void {
+        $encoded = $this->encodeImage($image, $extension);
+        $stream = openFile('php://temp', 'rb+');
+        try {
+            fwrite($stream, (string)$encoded);
+            rewind($stream);
+            $storage->writeStream($path, $stream, new Config());
+        } finally {
+            fclose($stream);
+        }
+    }
+
+    /**
+     * @param string $path File path
+     *
+     * @return void
+     */
+    protected function safeUnlink(string $path): void
+    {
+        if (is_file($path)) {
+            unlink($path);
+        }
     }
 
     /**
@@ -530,18 +612,19 @@ class ImageProcessor implements ProcessorInterface
     }
 
     /**
-     * Encodes the current image using the given file extension. `quality` and
-     * `strip` are only forwarded to encoders that accept them; for png/gif/bmp
-     * passing them would trigger an unknown-named-argument error in
-     * intervention/image v4.
+     * Encodes the given image using the given file extension. `quality`
+     * and `strip` are only forwarded to encoders that accept them; for
+     * png/gif/bmp passing them would trigger an unknown-named-argument
+     * error in intervention/image v4.
      *
+     * @param \Intervention\Image\Interfaces\ImageInterface $image Image
      * @param string|null $extension File extension
      *
      * @throws \InvalidArgumentException If extension is empty
      *
      * @return \Intervention\Image\Interfaces\EncodedImageInterface
      */
-    protected function encodeImage(?string $extension): EncodedImageInterface
+    protected function encodeImage(ImageInterface $image, ?string $extension): EncodedImageInterface
     {
         if ($extension === null || $extension === '') {
             throw new InvalidArgumentException('Cannot encode image without a file extension');
@@ -549,59 +632,54 @@ class ImageProcessor implements ProcessorInterface
 
         $extension = strtolower($extension);
         if (in_array($extension, self::QUALITY_AWARE_EXTENSIONS, true)) {
-            return $this->image->encodeUsingFileExtension(
+            return $image->encodeUsingFileExtension(
                 $extension,
                 quality: $this->qualityFor($extension),
                 strip: $this->stripExif,
             );
         }
 
-        return $this->image->encodeUsingFileExtension($extension);
+        return $image->encodeUsingFileExtension($extension);
     }
 
     /**
+     * Encodes via the spatie optimizer chain, which needs file paths
+     * (not streams) for compatibility with the underlying CLI tools.
+     * Both temp files are cleaned up even when storage I/O throws.
+     *
+     * @param \Intervention\Image\Interfaces\ImageInterface $image Image
      * @param \PhpCollective\Infrastructure\Storage\FileInterface $file File
-     * @param string $path Path
+     * @param string $path Destination path in storage
      * @param string|null $extension Output file extension
      *
      * @return void
      */
-    protected function optimizeAndStore(FileInterface $file, string $path, ?string $extension = null): void
-    {
+    protected function optimizeAndStore(
+        ImageInterface $image,
+        FileInterface $file,
+        string $path,
+        ?string $extension = null,
+    ): void {
         $storage = $this->storageHandler->getStorage($file->storage());
 
-        // We need temp files because the optimizer requires file paths
-        // rather than streams for compatibility with various optimization tools
         $optimizerTempFile = TemporaryFile::create();
         $optimizerOutput = TemporaryFile::create();
 
-        // Encode the image with the proper format and write to temp file
-        $encoded = $this->encodeImage($extension ?? $file->extension());
-        file_put_contents($optimizerTempFile, (string)$encoded);
+        try {
+            $encoded = $this->encodeImage($image, $extension ?? $file->extension());
+            file_put_contents($optimizerTempFile, (string)$encoded);
 
-        // Optimize it and write it to another file
-        $this->optimizer()->optimize($optimizerTempFile, $optimizerOutput);
+            $this->optimizer()->optimize($optimizerTempFile, $optimizerOutput);
 
-        // Open a new stream for the storage system
-        $optimizerOutputHandler = openFile($optimizerOutput, 'rb+');
-
-        // And store it...
-        $storage->writeStream(
-            $path,
-            $optimizerOutputHandler,
-            new Config(),
-        );
-
-        // Cleanup
-        fclose($optimizerOutputHandler);
-        unlink($optimizerTempFile);
-        unlink($optimizerOutput);
-
-        // Cleanup
-        unset(
-            $optimizerOutputHandler,
-            $optimizerTempFile,
-            $optimizerOutput,
-        );
+            $stream = openFile($optimizerOutput, 'rb+');
+            try {
+                $storage->writeStream($path, $stream, new Config());
+            } finally {
+                fclose($stream);
+            }
+        } finally {
+            $this->safeUnlink($optimizerTempFile);
+            $this->safeUnlink($optimizerOutput);
+        }
     }
 }

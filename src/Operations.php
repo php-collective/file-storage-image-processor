@@ -27,51 +27,6 @@ use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOp
 class Operations
 {
     /**
-     * @var string
-     */
-    public const POSITION_CENTER = 'center';
-
-    /**
-     * @var string
-     */
-    public const POSITION_TOP_CENTER = 'top-center';
-
-    /**
-     * @var string
-     */
-    public const POSITION_BOTTOM_CENTER = 'bottom-center';
-
-    /**
-     * @var string
-     */
-    public const POSITION_LEFT_TOP = 'left-top';
-
-    /**
-     * @var string
-     */
-    public const POSITION_RIGHT_TOP = 'right-top';
-
-    /**
-     * @var string
-     */
-    public const POSITION_LEFT_CENTER = 'left-center';
-
-    /**
-     * @var string
-     */
-    public const POSITION_RIGHT_CENTER = 'right-center';
-
-    /**
-     * @var string
-     */
-    public const POSITION_LEFT_BOTTOM = 'left-bottom';
-
-    /**
-     * @var string
-     */
-    public const POSITION_RIGHT_BOTTOM = 'right-bottom';
-
-    /**
      * @var \Intervention\Image\Interfaces\ImageInterface
      */
     protected ImageInterface $image;
@@ -102,14 +57,36 @@ class Operations
     }
 
     /**
+     * Normalises a position argument to the string form intervention/image
+     * accepts. Supports `Position` enum cases (resolved via `->value`) and
+     * raw strings (passed through). `null` returns the supplied default.
+     *
+     * @param mixed $value Position value
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Position $default Fallback case
+     *
+     * @return string
+     */
+    protected function resolvePosition(mixed $value, Position $default): string
+    {
+        if ($value instanceof Position) {
+            return $value->value;
+        }
+        if (is_string($value) && $value !== '') {
+            return $value;
+        }
+
+        return $default->value;
+    }
+
+    /**
      * @param string $name Name
      * @param array<string, mixed> $arguments Arguments
      *
      * @throws \PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOperationException
      *
-     * @return mixed
+     * @return never
      */
-    public function __call(string $name, array $arguments): mixed
+    public function __call(string $name, array $arguments): never
     {
         throw UnsupportedOperationException::withName($name);
     }
@@ -129,23 +106,18 @@ class Operations
             throw new InvalidArgumentException('Missing width or height');
         }
 
-        $arguments += ['position' => static::POSITION_CENTER];
+        $position = $this->resolvePosition($arguments['position'] ?? null, Position::Center);
+        $width = (int)$arguments['width'];
+        $height = (int)$arguments['height'];
         $preventUpscale = $arguments['preventUpscale'] ?? false;
+
         if ($preventUpscale) {
-            $this->image->coverDown(
-                (int)$arguments['width'],
-                (int)$arguments['height'],
-                $arguments['position'],
-            );
+            $this->image->coverDown($width, $height, $position);
 
             return;
         }
 
-        $this->image->cover(
-            (int)$arguments['width'],
-            (int)$arguments['height'],
-            $arguments['position'],
-        );
+        $this->image->cover($width, $height, $position);
     }
 
     /**
@@ -163,19 +135,19 @@ class Operations
             throw new InvalidArgumentException('Missing width or height');
         }
 
-        $arguments += ['x' => null, 'y' => null, 'position' => static::POSITION_CENTER];
-        $height = (int)$arguments['height'];
         $width = (int)$arguments['width'];
+        $height = (int)$arguments['height'];
+        $position = $this->resolvePosition($arguments['position'] ?? null, Position::Center);
+        $x = $arguments['x'] ?? null;
+        $y = $arguments['y'] ?? null;
 
-        // If x and y are explicitly provided, use coordinate-based cropping
-        if ($arguments['x'] !== null && $arguments['y'] !== null) {
-            $x = (int)$arguments['x'];
-            $y = (int)$arguments['y'];
-            $this->image->crop($width, $height, $x, $y, alignment: $arguments['position']);
-        } else {
-            // Use position-based cropping only
-            $this->image->crop($width, $height, alignment: $arguments['position']);
+        if ($x !== null && $y !== null) {
+            $this->image->crop($width, $height, (int)$x, (int)$y, alignment: $position);
+
+            return;
         }
+
+        $this->image->crop($width, $height, alignment: $position);
     }
 
     /**
@@ -185,7 +157,7 @@ class Operations
      */
     public function flipHorizontal(): void
     {
-        $this->flip(['direction' => 'h']);
+        $this->image->flip(Direction::HORIZONTAL);
     }
 
     /**
@@ -195,7 +167,7 @@ class Operations
      */
     public function flipVertical(): void
     {
-        $this->flip(['direction' => 'v']);
+        $this->image->flip(Direction::VERTICAL);
     }
 
     /**
@@ -213,19 +185,14 @@ class Operations
             throw new InvalidArgumentException('Direction missing');
         }
 
-        if ($arguments['direction'] !== 'v' && $arguments['direction'] !== 'h') {
-            throw new InvalidArgumentException(
-                'Invalid argument, you must provide h or v',
-            );
-        }
-
-        if ($arguments['direction'] === 'h') {
-            $this->image->flip(Direction::HORIZONTAL);
+        $direction = $arguments['direction'];
+        if ($direction instanceof FlipDirection) {
+            $this->image->flip($direction->intervention());
 
             return;
         }
 
-        $this->image->flip(Direction::VERTICAL);
+        $this->image->flip(FlipDirection::fromName((string)$direction)->intervention());
     }
 
     /**
@@ -479,16 +446,11 @@ class Operations
             throw new InvalidArgumentException('Missing width or height');
         }
 
-        $arguments += [
-            'background' => null,
-            'position' => static::POSITION_CENTER,
-        ];
-
         $this->image->resizeCanvas(
             (int)$arguments['width'],
             (int)$arguments['height'],
-            $arguments['background'],
-            $arguments['position'],
+            $arguments['background'] ?? null,
+            $this->resolvePosition($arguments['position'] ?? null, Position::Center),
         );
     }
 
@@ -511,7 +473,7 @@ class Operations
             $width,
             $height,
             $arguments['background'] ?? null,
-            $arguments['position'] ?? static::POSITION_CENTER,
+            $this->resolvePosition($arguments['position'] ?? null, Position::Center),
         );
     }
 
@@ -532,12 +494,13 @@ class Operations
             throw new InvalidArgumentException('Missing image');
         }
 
-        $position = $arguments['position'] ?? static::POSITION_BOTTOM_CENTER;
-        $x = (int)($arguments['x'] ?? 0);
-        $y = (int)($arguments['y'] ?? 0);
-        $opacity = (float)($arguments['opacity'] ?? 1);
-
-        $this->image->insert($arguments['image'], $x, $y, $position, $opacity);
+        $this->image->insert(
+            $arguments['image'],
+            (int)($arguments['x'] ?? 0),
+            (int)($arguments['y'] ?? 0),
+            $this->resolvePosition($arguments['position'] ?? null, Position::BottomCenter),
+            (float)($arguments['opacity'] ?? 1),
+        );
     }
 
     /**
