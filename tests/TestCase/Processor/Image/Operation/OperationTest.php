@@ -47,6 +47,7 @@ use PhpCollective\Test\TestCase\TestCase;
  * Verifies each Operation class forwards its constructor parameters
  * to the right intervention/image method when applied to a context.
  */
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class OperationTest extends TestCase
 {
     /**

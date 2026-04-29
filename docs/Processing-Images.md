@@ -2,13 +2,13 @@
 
 ```php
 use PhpCollective\Infrastructure\Storage\FileFactory;
+use PhpCollective\Infrastructure\Storage\FileStorage;
 use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilder;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Driver;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
-use PhpCollective\Infrastructure\Storage\FileStorage;
 use PhpCollective\Infrastructure\Storage\StorageAdapterFactory;
 use PhpCollective\Infrastructure\Storage\StorageService;
-use Intervention\Image\ImageManager;
 
 /*******************************************************************************
  * Configuring the stores - Your DI container or bootstrapping should do this
@@ -22,18 +22,12 @@ $pathBuilder = new PathBuilder();
 
 $fileStorage = new FileStorage(
     $storageService,
-    $pathBuilder
-);
-
-$imageManager = new ImageManager(
-    new \Intervention\Image\Drivers\Gd\Driver()
-);
-
-$imageProcessor = new ImageProcessor(
-    $fileStorage,
     $pathBuilder,
-    $imageManager
 );
+
+// Driver::Auto picks Imagick when the extension is loaded and falls
+// back to GD; use Driver::Gd or Driver::Imagick to choose explicitly.
+$imageProcessor = ImageProcessor::create(Driver::Auto, $fileStorage, $pathBuilder);
 
 /*******************************************************************************
  * Save the original first
@@ -54,13 +48,13 @@ $collection = ImageVariantCollection::create();
 
 // Resize with aspect ratio preservation (recommended for most cases)
 $collection->addNew('thumbnail')
-    ->scale(300, 300)  // Scales to fit within 300x300, maintains aspect ratio
+    ->scale(300, 300)
     ->optimize();
 
 // Resize to exact dimensions (stretches image)
 $collection->addNew('resizeAndFlip')
     ->flipHorizontal()
-    ->resize(300, 300)  // Exact 300x300, may distort
+    ->resize(300, 300)
     ->optimize();
 
 // Crop to exact dimensions
@@ -69,16 +63,37 @@ $collection->addNew('crop')
 
 $file = $file->withVariants($collection->toArray());
 
-// Process ALL variants (default behavior - empty array processes everything)
-$file = $imageProcessor
-    ->processOnlyTheseVariants([])
-    ->process($file);
+// Process ALL variants (default)
+$file = $imageProcessor->process($file);
 
-// OR: Process only specific variants (useful for re-generating single variants)
-// $file = $imageProcessor
-//     ->processOnlyTheseVariants(['thumbnail', 'crop'])
-//     ->process($file);
-
-// OR: Skip the filter entirely to process all
-// $file = $imageProcessor->process($file);
+// Or: process only specific variants (per-call filter)
+// $file = $imageProcessor->process($file, ['thumbnail', 'crop']);
 ```
+
+## Tuning the encoder
+
+`ImageProcessor` exposes a few setters for output tuning:
+
+```php
+$imageProcessor
+    ->setQuality(90)                                          // single value, all formats
+    ->setQuality(['webp' => 80, 'jpg' => 90, 'avif' => 70])   // per-format map
+    ->setStripExif(true)                                      // privacy + smaller files (default)
+    ->setPreserveProfile(true);                               // wide-gamut color (default)
+```
+
+`setQuality()` accepts either an int (1–100, applied to every quality-aware encoder) or an array keyed by extension. `setStripExif(true)` is the default and only affects encoders that support the `strip` argument (jpg / jpeg / pjpg / webp / avif / heic / tiff / jp2). `setPreserveProfile(true)` (also the default) captures the source ICC profile after decode and re-applies it after operations run, so wide-gamut sources keep rendering correctly even if a callback strips the profile mid-pipeline.
+
+## Selecting a subset of variants
+
+Pass an explicit list as the second argument to `process()` to scope a single call:
+
+```php
+// Only the named variants are written
+$file = $imageProcessor->process($file, ['thumbnail']);
+
+// Default (no second arg) processes every variant on the file
+$file = $imageProcessor->process($file);
+```
+
+The filter is **per-call** — there's no leakage between invocations, so it's safe to share an `ImageProcessor` instance across requests / queue workers.

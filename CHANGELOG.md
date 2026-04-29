@@ -5,7 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - TBD
+## [2.0.0] - TBD
+
+### Breaking
+
+- **PHP 8.3+** required (was 8.1)
+- **Intervention Image v4** required (was v3)
+- `processOnlyTheseVariants()` and `processAll()` removed; the variant filter is now a per-call argument: `$processor->process($file, ['thumbnail'])`
+- `Operations` class is gone — operations are now individual classes under `src/Operation/` resolved via `OperationRegistry`. The on-disk variant array shape is unchanged
+- `Operations::POSITION_*` string constants replaced by the `Position` enum (`Position::Center`, `Position::TopCenter`, …)
+- `ImageVariant::FLIP_HORIZONTAL` / `FLIP_VERTICAL` constants replaced by the `FlipDirection` enum
+- `flip()` no longer accepts arbitrary strings — use `FlipDirection` or one of `'h'`/`'v'`/`'horizontal'`/`'vertical'`
+- `cover()` no longer accepts a `$callback` parameter (it was always ignored)
+- `flipHorizontal()` now produces an actual horizontal mirror (1.x silently produced a vertical flip due to a v3 quirk; output of pipelines using this op will change)
+- EXIF/metadata is now stripped from encoded output by default; call `setStripExif(false)` to preserve
+
+### Added
+
+- `ImageProcessor::create(Driver|string $driver, …)` factory — builds the underlying `ImageManager` for you. Pass `Driver::Auto` / `Driver::Gd` / `Driver::Imagick`, or any equivalent string for config-driven setups
+- `setQuality(int|array $quality)` — accepts a single int or a per-extension map, e.g. `['webp' => 80, 'jpg' => 90, 'avif' => 70]`
+- `setStripExif(bool $strip)` toggle (default `true`)
+- `setPreserveProfile(bool $preserve)` toggle (default `true`) — captures the source ICC profile and re-applies it after the operations chain so wide-gamut sources keep their intended color rendering
+- `setMimeTypes(array $mimeTypes)` is now `public` with input validation
+- New first-class operations: `orient` (EXIF auto-rotate), `brightness`, `contrast`, `grayscale` (+ `greyscale` alias), `colorize`, `blur`, `pixelate`, `trim`, `resizeCanvas`, `padding`, `place` (watermark), `convert` (output format swap)
+- `ImageVariant::add(Operation $op)` primitive — attach `Operation` instances directly without going through a fluent builder method
+- `OperationRegistry` is the single source of truth for which operations exist; pass a custom registry to `ImageProcessor` to add app-specific operations without forking
+- `Driver`, `Position`, `FlipDirection` enums replacing magic strings throughout the public API. Each enum has a `fromName()` method that does case/whitespace normalisation for config-driven callers
+- Wider default MIME type allowlist: `image/avif`, `image/bmp`, `image/heic`, `image/heif`, `image/tiff`, `image/webp` on top of the existing `image/gif`/`jpg`/`jpeg`/`png`
+- Encoder allowlist for `quality:` / `strip:` named args extended to cover `pjpg`/`pjpeg`/`heif`/`tif`/`jp2`/`j2k`
+
+### Fixed
+
+- `ImageVariantCollection::fromArray()` silently accepted unknown operation names (the unsupported-operation check built an exception but never threw it)
+- `ImageProcessor::process()` leaked the source temp file and the encode stream when any variant operation, encoder, or `writeStream` threw. Cleanup is now in `try/finally` blocks
+- `heighten()` and `widen()` builders had no matching executor in the old `Operations` class — they would have thrown `UnsupportedOperationException` at runtime. Both now have working operation classes
+- `flipHorizontal()` mirrors horizontally instead of vertically (see Breaking)
+- `$this->image` is no longer kept as instance state on `ImageProcessor`, so `process()` is now safely re-entrant and doesn't leak the last variant's image to anything that touches the processor afterwards
+
+### Removed
+
+- `Operations` class and `Operations::POSITION_*` constants
+- `ImageVariant::FLIP_HORIZONTAL` and `ImageVariant::FLIP_VERTICAL` constants
+- `processOnlyTheseVariants()` / `processAll()` methods
+- The dead `$callback` parameter on `cover()`
+
+## [1.0.0] - 2025-11-10
 
 ### Added
 - Added `scale()` method to `ImageVariant` for resizing while preserving aspect ratio

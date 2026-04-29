@@ -1,8 +1,10 @@
 # Available Image Operations
 
-This document lists all available image manipulation operations that can be used with `ImageVariant`.
+Complete reference for the operations exposed via `ImageVariant`. Every fluent method on `ImageVariant` is a thin wrapper that constructs an `Operation` instance under `src/Operation/` and stores it; the canonical source of truth for parameter types is the operation class.
 
-## Basic Usage
+For a custom operation that's not in this list, register it on a custom `OperationRegistry` and pass that registry into `ImageProcessor`. See [Custom operations](#custom-operations) at the bottom.
+
+## Basic usage
 
 ```php
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
@@ -13,309 +15,330 @@ $collection->addNew('thumbnail')
     ->optimize();
 ```
 
-## Resizing & Scaling Operations
+## Resize / scale
 
-### resize()
+### `resize(int $width, int $height, bool $preventUpscale = false)`
 
-Resizes the image to exact dimensions. **Does not preserve aspect ratio** - the image will be stretched to fit.
-
-```php
-->resize(int $width, int $height, bool $preventUpscale = false)
-```
-
-**Parameters:**
-- `$width` - Target width in pixels
-- `$height` - Target height in pixels
-- `$preventUpscale` - If true, prevents making the image larger than original (default: false)
-
-**Example:**
-```php
-$collection->addNew('exact-size')
-    ->resize(200, 200);  // Will stretch to exactly 200x200
-```
-
-### scale()
-
-Scales the image while **preserving aspect ratio**. The resulting size may differ from the given arguments as the aspect ratio is maintained.
+Stretch the image to **exact** width and height. Aspect ratio is **not** preserved.
 
 ```php
-->scale(int $width, int $height, bool $preventUpscale = false)
+$collection->addNew('exact-size')->resize(200, 200);
 ```
 
-**Parameters:**
-- `$width` - Maximum width in pixels
-- `$height` - Maximum height in pixels
-- `$preventUpscale` - If true, prevents making the image larger than original (default: false)
+### `scale(int $width, int $height, bool $preventUpscale = false)`
 
-**Example:**
-```php
-$collection->addNew('thumbnail')
-    ->scale(300, 300);  // Will fit within 300x300 while maintaining aspect ratio
-```
-
-**Note:** Use `scale()` when you want to maintain the original proportions of the image. Use `resize()` when you need exact dimensions.
-
-### heighten()
-
-Resizes the image to a specific height while maintaining aspect ratio.
+Fit the image within `$width × $height` while preserving aspect ratio.
 
 ```php
-->heighten(int $height, bool $preventUpscale = false)
+$collection->addNew('thumbnail')->scale(300, 300);
 ```
 
-**Example:**
-```php
-$collection->addNew('portrait')
-    ->heighten(400);  // Height will be 400px, width will adjust proportionally
-```
+### `heighten(int $height, bool $preventUpscale = false)`
 
-### widen()
-
-Resizes the image to a specific width while maintaining aspect ratio.
+Resize to a specific height; width follows the aspect ratio.
 
 ```php
-->widen(int $width, bool $preventUpscale = false)
+$collection->addNew('portrait')->heighten(400);
 ```
 
-**Example:**
-```php
-$collection->addNew('landscape')
-    ->widen(600);  // Width will be 600px, height will adjust proportionally
-```
+### `widen(int $width, bool $preventUpscale = false)`
 
-## Cropping Operations
-
-### crop()
-
-Crops a rectangular area from the image.
+Resize to a specific width; height follows the aspect ratio.
 
 ```php
-->crop(int $width, int $height, ?int $x = null, ?int $y = null)
+$collection->addNew('landscape')->widen(600);
 ```
 
-**Parameters:**
-- `$width` - Width of the crop area
-- `$height` - Height of the crop area
-- `$x` - Optional X-axis offset (left edge)
-- `$y` - Optional Y-axis offset (top edge)
+## Crop / cover
 
-**Examples:**
-```php
-// Crop 200x200 from center (default position)
-$collection->addNew('square')
-    ->crop(200, 200);
+### `crop(int $width, int $height, ?int $x = null, ?int $y = null, Position $position = Position::Center)`
 
-// Crop 200x200 starting at specific coordinates
-$collection->addNew('specific-area')
-    ->crop(200, 200, 50, 50);
-```
-
-### cover()
-
-Crops the image to cover the specified dimensions while maintaining aspect ratio. The image will be cropped to fill the entire area.
+Cut a rectangle out. When `$x` and `$y` are both set, the crop is positioned at those exact pixel coordinates; otherwise the crop is positioned by the alignment.
 
 ```php
-->cover(int $width, int $height, ?callable $callback = null, bool $preventUpscale = false, string $position = 'center')
+use PhpCollective\Infrastructure\Storage\Processor\Image\Position;
+
+$collection->addNew('square')->crop(200, 200);
+$collection->addNew('top-strip')->crop(800, 100, position: Position::TopCenter);
+$collection->addNew('exact')->crop(200, 200, x: 50, y: 50);
 ```
 
-**Parameters:**
-- `$width` - Target width
-- `$height` - Target height
-- `$callback` - Optional callback function
-- `$preventUpscale` - Prevent upscaling (default: false)
-- `$position` - Position anchor point (default: 'center')
+### `cover(int $width, int $height, Position $position = Position::Center, bool $preventUpscale = false)`
 
-**Example:**
-```php
-$collection->addNew('avatar')
-    ->cover(100, 100);  // Creates a 100x100 image, cropped to fill
-```
-
-## Rotation & Flipping
-
-### rotate()
-
-Rotates the image by the specified angle.
+Zoom-crop to exact dimensions while preserving aspect ratio. The image is scaled to *cover* the area and the overflow is cropped at the chosen alignment.
 
 ```php
-->rotate(int $angle)
+$collection->addNew('avatar')->cover(150, 150);
+$collection->addNew('hero')->cover(1200, 400, Position::TopCenter);
 ```
 
-**Parameters:**
-- `$angle` - Rotation angle in degrees
+## Rotation / flipping
 
-**Example:**
-```php
-$collection->addNew('rotated')
-    ->rotate(90);  // Rotate 90 degrees clockwise
-```
+### `rotate(int $angle)`
 
-### flipHorizontal()
-
-Flips the image horizontally (mirror image).
+Rotate the image clockwise by the given angle in degrees.
 
 ```php
-->flipHorizontal()
+$collection->addNew('rotated')->rotate(90);
 ```
 
-**Example:**
-```php
-$collection->addNew('mirrored')
-    ->flipHorizontal();
-```
+### `flipHorizontal()` / `flipVertical()`
 
-### flipVertical()
-
-Flips the image vertically (upside down).
+Mirror horizontally or vertically.
 
 ```php
-->flipVertical()
+$collection->addNew('mirrored')->flipHorizontal();
+$collection->addNew('flipped')->flipVertical();
 ```
 
-**Example:**
-```php
-$collection->addNew('flipped')
-    ->flipVertical();
-```
+### `flip(FlipDirection|string $direction)`
 
-### flip()
-
-Flips the image in a specific direction.
+Mirror by direction. Accepts the `FlipDirection` enum (preferred) or the string codes `'h'` / `'v'` / `'horizontal'` / `'vertical'`.
 
 ```php
-->flip(string $direction)
+use PhpCollective\Infrastructure\Storage\Processor\Image\FlipDirection;
+
+$collection->addNew('typed')->flip(FlipDirection::Horizontal);
+$collection->addNew('config-driven')->flip($config['flip'] ?? 'h');
 ```
 
-**Parameters:**
-- `$direction` - Either 'h' (horizontal) or 'v' (vertical)
+### `orient()`
 
-**Example:**
-```php
-$collection->addNew('custom-flip')
-    ->flip('h');  // Same as flipHorizontal()
-```
-
-## Enhancement Operations
-
-### sharpen()
-
-Sharpens the image.
+Auto-rotate based on EXIF orientation. Best placed first in a pipeline so subsequent operations work on the visually correct orientation.
 
 ```php
-->sharpen(int $amount)
+$collection->addNew('phone-upload')
+    ->orient()
+    ->cover(1024, 768)
+    ->optimize();
 ```
 
-**Parameters:**
-- `$amount` - Sharpening intensity (typically 0-100)
+## Color / tone
 
-**Example:**
-```php
-$collection->addNew('sharp')
-    ->sharpen(15);
-```
+### `brightness(int $level)` / `contrast(int $level)`
 
-### optimize()
-
-Enables image optimization. When this is set, the image will be optimized using image optimization tools (requires spatie/image-optimizer).
+Channel adjustments in the `-100..100` range. `0` leaves the image unchanged.
 
 ```php
-->optimize()
+$collection->addNew('punchy')
+    ->brightness(10)
+    ->contrast(15);
 ```
 
-**Example:**
-```php
-$collection->addNew('web-optimized')
-    ->scale(800, 600)
-    ->optimize();  // Will reduce file size
-```
+### `grayscale()`
 
-## Advanced Operations
-
-### callback()
-
-Allows custom processing via a callback function.
+Convert to grayscale.
 
 ```php
-->callback(callable $callback)
+$collection->addNew('mono')->grayscale();
 ```
 
-**Parameters:**
-- `$callback` - A callable that receives the image instance and arguments
+### `colorize(int $red = 0, int $green = 0, int $blue = 0)`
 
-**Example:**
+Tint by shifting each channel in the `-100..100` range.
+
+```php
+$collection->addNew('warm')->colorize(10, 0, -10);
+```
+
+## Effects
+
+### `sharpen(int $amount)`
+
+Sharpen, `0..100`.
+
+```php
+$collection->addNew('crisp')->sharpen(15);
+```
+
+### `blur(int $level = 5)`
+
+Gaussian-style blur, `0..100`. Defaults to 5 (intervention's default).
+
+```php
+$collection->addNew('soft')->blur(20);
+```
+
+### `pixelate(int $size)`
+
+Privacy-redaction effect. `$size` is the pixel block size.
+
+```php
+$collection->addNew('redacted')->pixelate(12);
+```
+
+### `trim(int $tolerance = 0)`
+
+Strip uniform-coloured border areas. `$tolerance` is `0..100`; `0` only trims exact-match colours.
+
+```php
+$collection->addNew('content-only')->trim(5);
+```
+
+## Canvas
+
+### `resizeCanvas(int $width, int $height, ?string $background = null, Position $position = Position::Center)`
+
+Resize the working canvas without resampling the source image. New pixel area introduced by growing the canvas is filled with `$background`.
+
+```php
+$collection->addNew('framed')
+    ->resizeCanvas(800, 600, background: '#ffffff', position: Position::Center);
+```
+
+### `padding(int $amount, ?string $background = null)`
+
+Add `$amount` pixels of padding on every side, filled with `$background`.
+
+```php
+$collection->addNew('padded')->padding(20, '#000000');
+```
+
+## Watermark / overlay
+
+### `place(string $image, Position $position = Position::BottomCenter, int $x = 0, int $y = 0, float $opacity = 1.0)`
+
+Insert another image on top of the current one.
+
+```php
+$collection->addNew('watermarked')
+    ->scale(1024, 1024)
+    ->place('logo.png', Position::BottomRight, x: -10, y: -10, opacity: 0.6);
+```
+
+## Format / output
+
+### `convert(string $format)`
+
+Re-encode the variant in a different format than the source. The variant's stored path's extension is swapped to match.
+
+```php
+$collection->addNew('webp-version')
+    ->scale(1200, 800)
+    ->convert('webp');
+```
+
+### `optimize()`
+
+Run the variant through [`spatie/image-optimizer`](https://github.com/spatie/image-optimizer) after encoding. Reduces file size; requires the optimizer's CLI tools (`jpegoptim`, `optipng`, …) to be installed on the system.
+
+```php
+$collection->addNew('web-large')
+    ->scale(1920, 1080)
+    ->optimize();
+```
+
+## Custom callbacks
+
+### `callback(callable $callback)`
+
+Escape hatch for one-off image manipulation that no first-class operation covers. The callback receives the intervention/image instance and modifies it in place.
+
 ```php
 $collection->addNew('custom')
-    ->callback(function($image, $args) {
-        // Perform custom operations on $image
+    ->callback(function ($image) {
         $image->brightness(10);
         $image->contrast(5);
     });
 ```
 
-## Chaining Operations
+> Note: `Callback` operations don't survive a `toArray()` round-trip cleanly (closures are not serialisable). Use them for in-process pipelines, not for persisted variant configurations.
 
-All operations can be chained together to create complex transformations:
+## Chaining
+
+All operations chain:
 
 ```php
-$collection->addNew('complex-variant')
-    ->scale(800, 600)           // Scale to max 800x600
-    ->sharpen(10)               // Apply sharpening
-    ->flipHorizontal()          // Mirror the image
-    ->rotate(90)                // Rotate 90 degrees
-    ->optimize();               // Optimize file size
+$collection->addNew('hero-mobile')
+    ->orient()
+    ->cover(750, 500, Position::TopCenter)
+    ->sharpen(8)
+    ->convert('webp')
+    ->optimize();
 ```
 
-## Common Patterns
+## Position constants
 
-### Profile Pictures / Avatars
+The `Position` enum covers every alignment intervention/image accepts, in both `top-left` and `left-top` forms:
+
+```php
+use PhpCollective\Infrastructure\Storage\Processor\Image\Position;
+
+Position::Center
+Position::TopCenter      Position::BottomCenter
+Position::TopLeft        Position::TopRight
+Position::LeftTop        Position::RightTop
+Position::LeftCenter     Position::RightCenter
+Position::LeftBottom     Position::RightBottom
+Position::BottomLeft     Position::BottomRight
+```
+
+For config-driven setups: `Position::fromName($string)` does case/whitespace normalisation and throws with a clear list of valid names on bad input.
+
+## Common patterns
+
+### Profile pictures / avatars
+
 ```php
 $collection->addNew('avatar')
+    ->orient()
     ->cover(150, 150)
     ->optimize();
 ```
 
-### Thumbnails
+### Responsive images
+
 ```php
-$collection->addNew('thumbnail')
-    ->scale(300, 300)
-    ->sharpen(5)
+foreach ([320 => 'mobile', 768 => 'tablet', 1920 => 'desktop'] as $width => $name) {
+    $collection->addNew($name)
+        ->scale($width, $width)
+        ->convert('webp')
+        ->optimize();
+}
+```
+
+### Watermarked deliverable
+
+```php
+$collection->addNew('preview')
+    ->scale(1200, 1200)
+    ->place('watermark.png', Position::BottomCenter, opacity: 0.5)
     ->optimize();
 ```
 
-### Web-Optimized Images
+## Custom operations
+
+`ImageProcessor` accepts a custom `OperationRegistry` as its fifth constructor argument. This lets apps add operations the package doesn't ship with — for example a domain-specific recolouring step.
+
 ```php
-$collection->addNew('web-large')
-    ->scale(1920, 1080)
-    ->optimize();
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Operation;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\OperationContext;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\OperationRegistry;
 
-$collection->addNew('web-medium')
-    ->scale(1024, 768)
-    ->optimize();
+final class TintOperation implements Operation
+{
+    public function __construct(public readonly string $color) {}
 
-$collection->addNew('web-small')
-    ->scale(640, 480)
-    ->optimize();
+    public function name(): string { return 'tint'; }
+
+    public function apply(OperationContext $context): void {
+        $context->image->fill($this->color);
+    }
+
+    public function toArray(): array { return ['color' => $this->color]; }
+}
+
+$registry = OperationRegistry::default()
+    ->register('tint', static fn (array $args): Operation => new TintOperation((string)$args['color']));
+
+$processor = new ImageProcessor(
+    $storage,
+    $pathBuilder,
+    $imageManager,
+    urlBuilder: null,
+    operationRegistry: $registry,
+);
+
+// On the variant side, attach the operation directly via add()
+$collection->addNew('tinted')->add(new TintOperation('#ffaa00'));
 ```
-
-### Exact Dimensions (e.g., for cards/banners)
-```php
-$collection->addNew('banner')
-    ->cover(1200, 400)  // Fills entire 1200x400, crops excess
-    ->optimize();
-```
-
-## Position Constants
-
-When using operations that support positioning (like `cover`), you can use these position values:
-
-- `'center'` (default)
-- `'top-center'`
-- `'bottom-center'`
-- `'left-top'`
-- `'right-top'`
-- `'left-center'`
-- `'right-center'`
-- `'left-bottom'`
-- `'right-bottom'`
-
-These constants are available in `PhpCollective\Infrastructure\Storage\Processor\Image\Operations`.

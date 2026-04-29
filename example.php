@@ -5,13 +5,13 @@ require 'vendor/autoload.php';
 
 use PhpCollective\Infrastructure\Storage\Factories\LocalFactory;
 use PhpCollective\Infrastructure\Storage\FileFactory;
+use PhpCollective\Infrastructure\Storage\FileStorage;
 use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilder;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Driver;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
-use PhpCollective\Infrastructure\Storage\FileStorage;
 use PhpCollective\Infrastructure\Storage\StorageAdapterFactory;
 use PhpCollective\Infrastructure\Storage\StorageService;
-use Intervention\Image\ImageManager;
 
 /*******************************************************************************
  * Just a Utility function for this example and some output
@@ -70,15 +70,9 @@ $fileStorage = new FileStorage(
     $pathBuilder,
 );
 
-$imageManager = new ImageManager(
-    new \Intervention\Image\Drivers\Gd\Driver()
-);
-
-$imageProcessor = new ImageProcessor(
-    $fileStorage,
-    $pathBuilder,
-    $imageManager,
-);
+// One-line factory: pass Driver::Auto / Gd / Imagick. Use the regular
+// constructor when a custom-configured ImageManager is needed.
+$imageProcessor = ImageProcessor::create(Driver::Auto, $fileStorage, $pathBuilder);
 
 /*******************************************************************************
  * Working with files
@@ -137,23 +131,13 @@ $file = $file->withVariants($collection->toArray());
 // Option 1: Process ALL variants
 $file = $imageProcessor->process($file);
 
-// Option 2: Process only specific variants (uncomment to use)
-// $file = $imageProcessor
-//     ->processOnlyTheseVariants(['thumbnail', 'crop'])
-//     ->process($file);
+// Option 2: Process only specific variants (per-call filter, no leak)
+// $file = $imageProcessor->process($file, ['thumbnail', 'crop']);
 
 // Option 3: Process in stages (quick preview, then full processing)
-// Step 1: Fast variants first
-// $file = $imageProcessor
-//     ->processOnlyTheseVariants(['thumbnail'])
-//     ->process($file);
-//
+// $file = $imageProcessor->process($file, ['thumbnail']);
 // displayPreview($file); // Show user something immediately
-//
-// Step 2: Process remaining variants
-// $file = $imageProcessor
-//     ->processOnlyTheseVariants(['resizeAndFlip', 'crop'])
-//     ->process($file);
+// $file = $imageProcessor->process($file, ['resizeAndFlip', 'crop']);
 
 echo var_export($file->toArray(), true);
 echo PHP_EOL;
