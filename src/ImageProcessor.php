@@ -150,6 +150,18 @@ class ImageProcessor implements ProcessorInterface
     protected bool $preserveProfile = true;
 
     /**
+     * Whether to preserve animation in animated GIF / WebP sources.
+     * When enabled (the default) intervention/image's frame-aware
+     * encoders run every frame through the operations pipeline, so an
+     * animated GIF in produces an animated GIF out. Disable to flatten
+     * to a single static frame — useful when the variant is meant as a
+     * thumbnail and you don't want to ship the animation.
+     *
+     * @var bool
+     */
+    protected bool $preserveAnimation = true;
+
+    /**
      * @var \PhpCollective\Infrastructure\Storage\Processor\Image\Operation\OperationRegistry
      */
     protected OperationRegistry $operationRegistry;
@@ -323,6 +335,29 @@ class ImageProcessor implements ProcessorInterface
     }
 
     /**
+     * Toggles whether animation is preserved on animated sources
+     * (GIF / WebP). Enabled by default — intervention/image's
+     * frame-aware encoders run every frame through the operations
+     * pipeline, so an animated source produces an animated variant.
+     *
+     * Disable to flatten to a single static frame. Useful when the
+     * variant is meant as a thumbnail and the animation isn't
+     * relevant, or when targeting an output format that can't carry
+     * animation (e.g. converting an animated GIF to JPEG via the
+     * `convert` operation).
+     *
+     * @param bool $preserve Whether to keep animation on animated sources
+     *
+     * @return $this
+     */
+    public function setPreserveAnimation(bool $preserve)
+    {
+        $this->preserveAnimation = $preserve;
+
+        return $this;
+    }
+
+    /**
      * @param int $quality Quality
      *
      * @throws \InvalidArgumentException
@@ -476,6 +511,10 @@ class ImageProcessor implements ProcessorInterface
         FilesystemAdapter $storage,
     ): FileInterface {
         $image = $this->imageManager->decodePath($tempFile);
+
+        if (!$this->preserveAnimation && $image->isAnimated()) {
+            $image->removeAnimation();
+        }
 
         $sourceProfile = $this->preserveProfile ? $this->captureProfile($image) : null;
 
