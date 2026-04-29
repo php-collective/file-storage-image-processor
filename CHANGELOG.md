@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - TBD
+## [1.0.1] - TBD
+
+### Fixed
+- Repeating the same operation type on a variant no longer overwrites the earlier step. Repeated operations are preserved and executed in insertion order
+- `ImageVariantCollection::fromArray()` now preserves serialized variant URLs in addition to paths and operations
+- CI now installs `imagick`, and the test suite includes an Imagick-driver processing smoke test so both supported drivers are exercised
+
+## [1.0.0] - 2025-11-10
 
 ### Added
 - Added `scale()` method to `ImageVariant` for resizing while preserving aspect ratio

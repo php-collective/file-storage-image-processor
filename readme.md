@@ -13,7 +13,7 @@ Built on top of [Intervention Image v3](https://image.intervention.io/v3).
  * Supports multiple image operations: resize, scale, crop, rotate, flip, sharpen, and more
  * Optimizes image file size using [spatie/image-optimizer](https://github.com/spatie/image-optimizer)
  * Works with League Flysystem for flexible storage backends
- * Fluent API for chaining image operations
+ * Fluent API for chaining image operations, including repeating the same operation type multiple times
 
 ## Requirements
 
@@ -44,9 +44,20 @@ $collection->addNew('avatar')
     ->cover(150, 150)
     ->optimize();
 
+// Repeating the same operation type preserves both steps
+$collection->addNew('effects')
+    ->callback(function ($image, $args) {
+        // first pass
+    })
+    ->callback(function ($image, $args) {
+        // second pass
+    });
+
 $file = $file->withVariants($collection->toArray());
 $file = $imageProcessor->process($file);
 ```
+
+Repeated operations of the same name are preserved in order when you serialize variants with `toArray()` and rebuild them later with `ImageVariantCollection::fromArray()`.
 
 ## Documentation
 

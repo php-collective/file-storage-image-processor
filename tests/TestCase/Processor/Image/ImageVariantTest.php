@@ -99,4 +99,25 @@ class ImageVariantTest extends TestCase
 
         $this->assertEquals($expected, $result);
     }
+
+    /**
+     * @return void
+     */
+    public function testVariantPreservesRepeatedOperations(): void
+    {
+        $first = static function ($image, $args): void {
+        };
+        $second = static function ($image, $args): void {
+        };
+
+        $variant = ImageVariant::create('effects')
+            ->callback($first)
+            ->callback($second);
+
+        $result = $variant->toArray();
+
+        $this->assertCount(2, $result['operations']['callback']);
+        $this->assertSame($first, $result['operations']['callback'][0]['callback']);
+        $this->assertSame($second, $result['operations']['callback'][1]['callback']);
+    }
 }

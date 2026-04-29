@@ -25,7 +25,18 @@ class ImageVariant extends Variant
     protected string $name;
 
     /**
-     * @var array<string, array<string, mixed>>
+     * Single operations keep the legacy shape:
+     *
+     *     'resize' => ['width' => 300, 'height' => 300]
+     *
+     * Repeated operations of the same name are stored as a list:
+     *
+     *     'callback' => [
+     *         ['callback' => $first],
+     *         ['callback' => $second],
+     *     ]
+     *
+     * @var array<string, array<string, mixed>|array<int, array<string, mixed>>>
      */
     protected array $operations;
 
@@ -80,12 +91,12 @@ class ImageVariant extends Variant
      */
     public function crop(int $width, int $height, ?int $x = null, ?int $y = null)
     {
-        $this->operations['crop'] = [
+        $this->appendOperation('crop', [
             'width' => $width,
             'height' => $height,
             'x' => $x,
             'y' => $y,
-        ];
+        ]);
 
         return $this;
     }
@@ -97,9 +108,9 @@ class ImageVariant extends Variant
      */
     public function sharpen(int $amount)
     {
-        $this->operations['sharpen'] = [
+        $this->appendOperation('sharpen', [
             'amount' => $amount,
-        ];
+        ]);
 
         return $this;
     }
@@ -111,9 +122,9 @@ class ImageVariant extends Variant
      */
     public function rotate(int $angle)
     {
-        $this->operations['rotate'] = [
+        $this->appendOperation('rotate', [
             'angle' => $angle,
-        ];
+        ]);
 
         return $this;
     }
@@ -126,10 +137,10 @@ class ImageVariant extends Variant
      */
     public function heighten(int $height, bool $preventUpscale = false)
     {
-        $this->operations['heighten'] = [
+        $this->appendOperation('heighten', [
             'height' => $height,
             'preventUpscale' => $preventUpscale,
-        ];
+        ]);
 
         return $this;
     }
@@ -142,10 +153,10 @@ class ImageVariant extends Variant
      */
     public function widen(int $width, bool $preventUpscale = false)
     {
-        $this->operations['widen'] = [
+        $this->appendOperation('widen', [
             'width' => $width,
             'preventUpscale' => $preventUpscale,
-        ];
+        ]);
 
         return $this;
     }
@@ -161,11 +172,11 @@ class ImageVariant extends Variant
      */
     public function resize(int $width, int $height, bool $preventUpscale = false)
     {
-        $this->operations['resize'] = [
+        $this->appendOperation('resize', [
             'width' => $width,
             'height' => $height,
             'preventUpscale' => $preventUpscale,
-        ];
+        ]);
 
         return $this;
     }
@@ -181,11 +192,11 @@ class ImageVariant extends Variant
      */
     public function scale(int $width, int $height, bool $preventUpscale = false)
     {
-        $this->operations['scale'] = [
+        $this->appendOperation('scale', [
             'width' => $width,
             'height' => $height,
             'preventUpscale' => $preventUpscale,
-        ];
+        ]);
 
         return $this;
     }
@@ -197,9 +208,9 @@ class ImageVariant extends Variant
      */
     public function flipHorizontal()
     {
-        $this->operations['flipHorizontal'] = [
+        $this->appendOperation('flipHorizontal', [
             'direction' => self::FLIP_HORIZONTAL,
-        ];
+        ]);
 
         return $this;
     }
@@ -211,9 +222,9 @@ class ImageVariant extends Variant
      */
     public function flipVertical()
     {
-        $this->operations['flipVertical'] = [
+        $this->appendOperation('flipVertical', [
             'direction' => self::FLIP_VERTICAL,
-        ];
+        ]);
 
         return $this;
     }
@@ -236,9 +247,9 @@ class ImageVariant extends Variant
             ));
         }
 
-        $this->operations['flip'] = [
+        $this->appendOperation('flip', [
             'direction' => $direction,
-        ];
+        ]);
 
         return $this;
     }
@@ -253,9 +264,9 @@ class ImageVariant extends Variant
      */
     public function callback(callable $callback)
     {
-        $this->operations['callback'] = [
+        $this->appendOperation('callback', [
             'callback' => $callback,
-        ];
+        ]);
 
         return $this;
     }
@@ -276,15 +287,54 @@ class ImageVariant extends Variant
         bool $preventUpscale = false,
         string $position = 'center',
     ) {
-        $this->operations['cover'] = [
+        $this->appendOperation('cover', [
             'width' => $width,
             'height' => $height,
             'callback' => $callback,
             'preventUpscale' => $preventUpscale,
             'position' => $position,
-        ];
+        ]);
 
         return $this;
+    }
+
+    /**
+     * @param string $name Operation name
+     * @param array<string, mixed> $payload Serialized operation payload
+     *
+     * @return void
+     */
+    protected function appendOperation(string $name, array $payload): void
+    {
+        if (!isset($this->operations[$name])) {
+            $this->operations[$name] = $payload;
+
+            return;
+        }
+
+        $existing = $this->operations[$name];
+        if ($this->isOperationSequence($existing)) {
+            $existing[] = $payload;
+            $this->operations[$name] = $existing;
+
+            return;
+        }
+
+        $this->operations[$name] = [$existing, $payload];
+    }
+
+    /**
+     * @param array<string, mixed>|array<int, array<string, mixed>> $value Serialized operation entry
+     *
+     * @return bool
+     */
+    protected function isOperationSequence(array $value): bool
+    {
+        if ($value === []) {
+            return false;
+        }
+
+        return array_is_list($value) && is_array($value[0] ?? null);
     }
 
     /**

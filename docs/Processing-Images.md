@@ -67,6 +67,15 @@ $collection->addNew('resizeAndFlip')
 $collection->addNew('crop')
     ->crop(100, 100);
 
+// Repeating the same operation type keeps both steps in order
+$collection->addNew('effects')
+    ->callback(function ($image, $args) {
+        // first pass
+    })
+    ->callback(function ($image, $args) {
+        // second pass
+    });
+
 $file = $file->withVariants($collection->toArray());
 
 // Process ALL variants (default behavior - empty array processes everything)
@@ -82,3 +91,22 @@ $file = $imageProcessor
 // OR: Skip the filter entirely to process all
 // $file = $imageProcessor->process($file);
 ```
+
+## Variant serialization
+
+`ImageVariantCollection::toArray()` preserves operation order, including repeated operations of the same name. Single operations keep the legacy shape:
+
+```php
+'resize' => ['width' => 300, 'height' => 300]
+```
+
+If the same operation is added more than once, that entry becomes a list:
+
+```php
+'callback' => [
+    ['callback' => $first],
+    ['callback' => $second],
+]
+```
+
+`ImageVariantCollection::fromArray()` accepts both shapes and rebuilds the variant chain in the same order, while preserving serialized `path` and `url` values.

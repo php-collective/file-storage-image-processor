@@ -95,4 +95,38 @@ class ImageVariantCollectionTest extends TestCase
         $result = json_encode($collection);
         $this->assertEquals($expected, $result);
     }
+
+    /**
+     * @return void
+     */
+    public function testFromArrayPreservesUrlAndRepeatedOperations(): void
+    {
+        $first = static function ($image, $args): void {
+        };
+        $second = static function ($image, $args): void {
+        };
+
+        $expected = [
+            'effects' => [
+                'operations' => [
+                    'callback' => [
+                        ['callback' => $first],
+                        ['callback' => $second],
+                    ],
+                ],
+                'path' => '/variants/effects.jpg',
+                'url' => 'https://cdn.example.test/variants/effects.jpg',
+                'optimize' => false,
+            ],
+        ];
+
+        $collection = ImageVariantCollection::fromArray($expected);
+        $result = $collection->toArray();
+
+        $this->assertSame('/variants/effects.jpg', $result['effects']['path']);
+        $this->assertSame('https://cdn.example.test/variants/effects.jpg', $result['effects']['url']);
+        $this->assertCount(2, $result['effects']['operations']['callback']);
+        $this->assertSame($first, $result['effects']['operations']['callback'][0]['callback']);
+        $this->assertSame($second, $result['effects']['operations']['callback'][1]['callback']);
+    }
 }

@@ -19,6 +19,7 @@ use Iterator;
 use PhpCollective\Infrastructure\Storage\Processor\Exception\VariantExistsException;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOperationException;
 use ReflectionClass;
+use function is_array;
 
 /**
  * Conversion Collection
@@ -82,26 +83,51 @@ class ImageVariantCollection implements ImageVariantCollectionInterface
             if (!empty($data['path']) && is_string($data['path'])) {
                 $variant = $variant->withPath($data['path']);
             }
+            if (!empty($data['url']) && is_string($data['url'])) {
+                $variant = $variant->withUrl($data['url']);
+            }
 
             foreach ($data['operations'] as $method => $args) {
                 if (!method_exists($variant, $method)) {
                     UnsupportedOperationException::withName($method);
                 }
 
-                /** @var array<mixed> $parameters */
-                $parameters = self::filterArgs($variant, $method, $args);
-                /** @var callable $callable */
-                $callable = [$variant, $method];
-                $variant = call_user_func_array(
-                    $callable,
-                    $parameters,
-                );
+                foreach (self::normalizeOperationPayloads($args) as $payload) {
+                    /** @var array<mixed> $parameters */
+                    $parameters = self::filterArgs($variant, $method, $payload);
+                    /** @var callable $callable */
+                    $callable = [$variant, $method];
+                    $variant = call_user_func_array(
+                        $callable,
+                        $parameters,
+                    );
+                }
             }
 
             $that->add($variant);
         }
 
         return $that;
+    }
+
+    /**
+     * @param mixed $args Serialized operation payload for one method
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected static function normalizeOperationPayloads(mixed $args): array
+    {
+        if (!is_array($args)) {
+            return [[]];
+        }
+        if ($args === []) {
+            return [[]];
+        }
+        if (array_is_list($args) && is_array($args[0] ?? null)) {
+            return $args;
+        }
+
+        return [$args];
     }
 
     /**

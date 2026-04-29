@@ -25,6 +25,7 @@ use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\TempFileCreat
 use PhpCollective\Infrastructure\Storage\Processor\ProcessorInterface;
 use PhpCollective\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface;
 use PhpCollective\Infrastructure\Storage\Utility\TemporaryFile;
+use function is_array;
 use function PhpCollective\Infrastructure\Storage\openFile;
 
 /**
@@ -251,7 +252,9 @@ class ImageProcessor implements ProcessorInterface
 
             // Apply the operations
             foreach ($data['operations'] as $operation => $arguments) {
-                $operations->{$operation}($arguments);
+                foreach ($this->normalizeOperationPayloads($arguments) as $payload) {
+                    $operations->{$operation}($payload);
+                }
             }
 
             $path = $this->pathBuilder->pathForVariant($file, $variant);
@@ -280,6 +283,26 @@ class ImageProcessor implements ProcessorInterface
         unlink($tempFile);
 
         return $file;
+    }
+
+    /**
+     * @param mixed $arguments Serialized operation payload for one method
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function normalizeOperationPayloads(mixed $arguments): array
+    {
+        if (!is_array($arguments)) {
+            return [[]];
+        }
+        if ($arguments === []) {
+            return [[]];
+        }
+        if (array_is_list($arguments) && is_array($arguments[0] ?? null)) {
+            return $arguments;
+        }
+
+        return [$arguments];
     }
 
     /**
