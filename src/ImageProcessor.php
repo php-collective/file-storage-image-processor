@@ -26,6 +26,7 @@ use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\TempFileCreat
 use PhpCollective\Infrastructure\Storage\Processor\ProcessorInterface;
 use PhpCollective\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface;
 use PhpCollective\Infrastructure\Storage\Utility\TemporaryFile;
+use Throwable;
 use function PhpCollective\Infrastructure\Storage\openFile;
 
 /**
@@ -127,11 +128,33 @@ class ImageProcessor implements ProcessorInterface
     /**
      * Whether to strip EXIF/metadata when encoding output. Defaults to true
      * for privacy and smaller file sizes; disable if downstream consumers
-     * rely on metadata such as orientation, ICC profile or copyright tags.
+     * rely on metadata such as orientation or copyright tags.
+     *
+     * Note that the ICC color profile is handled independently — under the
+     * Imagick driver, intervention's strip implementation re-applies the
+     * profile after stripping metadata, and the explicit toggle below
+     * controls preservation across the operations chain.
      *
      * @var bool
      */
     protected bool $stripExif = true;
+
+    /**
+     * Whether to preserve the source image's embedded ICC color profile
+     * across the operations chain. When enabled the profile is captured
+     * after decoding and re-applied to the encoded variant so wide-gamut
+     * sources (DisplayP3, AdobeRGB) keep rendering correctly.
+     *
+     * Defaults to `true`: color correctness is the safer default for a
+     * generic image pipeline, and the profile blob (~3 KB) is negligible
+     * compared to the visual cost of mis-rendered wide-gamut images.
+     * Profiles are only supported by the Imagick driver — under GD this
+     * toggle is effectively a no-op because GD has no concept of color
+     * profiles, and any setProfile failure is swallowed silently.
+     *
+     * @var bool
+     */
+    protected bool $preserveProfile = true;
 
     /**
      * @param \PhpCollective\Infrastructure\Storage\FileStorageInterface $storageHandler File Storage Handler
@@ -212,6 +235,27 @@ class ImageProcessor implements ProcessorInterface
     public function setStripExif(bool $strip)
     {
         $this->stripExif = $strip;
+
+        return $this;
+    }
+
+    /**
+     * Toggles whether the source image's embedded ICC color profile is
+     * preserved through processing. When enabled the profile is captured
+     * right after decoding and re-applied to the variant after operations
+     * have run, so wide-gamut sources (DisplayP3, AdobeRGB) keep their
+     * intended color rendering.
+     *
+     * Profiles are only supported by the Imagick driver. Under GD the
+     * toggle is a no-op because GD has no concept of color profiles.
+     *
+     * @param bool $preserve Whether to preserve the ICC profile
+     *
+     * @return $this
+     */
+    public function setPreserveProfile(bool $preserve)
+    {
+        $this->preserveProfile = $preserve;
 
         return $this;
     }
@@ -358,11 +402,33 @@ class ImageProcessor implements ProcessorInterface
             }
 
             $this->image = $this->imageManager->decodePath($tempFile);
+
+            // Capture the source ICC profile so we can re-apply it after
+            // operations run, in case any modifier strips it. profile()
+            // throws when the source has no profile, which we treat as a
+            // no-op for preservation purposes.
+            $sourceProfile = null;
+            if ($this->preserveProfile) {
+                try {
+                    $sourceProfile = $this->image->profile();
+                } catch (Throwable) {
+                    $sourceProfile = null;
+                }
+            }
+
             $operations = new Operations($this->image);
 
             // Apply the operations
             foreach ($data['operations'] as $operation => $arguments) {
                 $operations->{$operation}($arguments);
+            }
+
+            if ($sourceProfile !== null) {
+                try {
+                    $this->image->setProfile($sourceProfile);
+                } catch (Throwable) {
+                    // Driver doesn't support profiles (e.g. GD); silently skip
+                }
             }
 
             $extension = $operations->getOutputFormat() ?? $file->extension();
