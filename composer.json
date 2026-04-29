@@ -23,7 +23,7 @@
     "require-dev": {
         "php-collective/file-storage": "^1.0.0",
         "php-collective/code-sniffer": "^0.4.1",
-        "phpunit/phpunit": "^10.3 || ^11.5 || ^12.3",
+        "phpunit/phpunit": "^12.3 || ^13.0",
         "phpstan/phpstan": "^2.1"
     },
     "minimum-stability": "stable",
