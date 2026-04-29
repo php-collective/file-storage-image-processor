@@ -79,10 +79,26 @@ $imageProcessor
     ->setQuality(90)                                          // single value, all formats
     ->setQuality(['webp' => 80, 'jpg' => 90, 'avif' => 70])   // per-format map
     ->setStripExif(true)                                      // privacy + smaller files (default)
-    ->setPreserveProfile(true);                               // wide-gamut color (default)
+    ->setPreserveProfile(true)                                // wide-gamut color (default)
+    ->setPreserveAnimation(true);                             // animated GIF/WebP keep all frames (default)
 ```
 
 `setQuality()` accepts either an int (1–100, applied to every quality-aware encoder) or an array keyed by extension. `setStripExif(true)` is the default and only affects encoders that support the `strip` argument (jpg / jpeg / pjpg / webp / avif / heic / tiff / jp2). `setPreserveProfile(true)` (also the default) captures the source ICC profile after decode and re-applies it after operations run, so wide-gamut sources keep rendering correctly even if a callback strips the profile mid-pipeline.
+
+## Animated images
+
+Animated GIF and WebP sources are preserved through the pipeline by default — every frame runs through the operations chain (resize / crop / cover / etc. apply per-frame) and the encoder emits animated output. Call `setPreserveAnimation(false)` to flatten to a single static frame:
+
+```php
+// Keep all frames (default)
+$imageProcessor->process($file);
+
+// Flatten to a single frame — useful for static thumbnails or when
+// converting to a non-animated format like JPEG via `convert()`.
+$imageProcessor
+    ->setPreserveAnimation(false)
+    ->process($file);
+```
 
 ## Selecting a subset of variants
 

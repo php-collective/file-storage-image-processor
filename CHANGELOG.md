@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `setQuality(int|array $quality)` — accepts a single int or a per-extension map, e.g. `['webp' => 80, 'jpg' => 90, 'avif' => 70]`
 - `setStripExif(bool $strip)` toggle (default `true`)
 - `setPreserveProfile(bool $preserve)` toggle (default `true`) — captures the source ICC profile and re-applies it after the operations chain so wide-gamut sources keep their intended color rendering
+- `setPreserveAnimation(bool $preserve)` toggle (default `true`) — animated GIF / WebP sources keep all frames through the pipeline. Disable to flatten to a single static frame (useful for thumbnail variants or when converting to a non-animated format)
 - `setMimeTypes(array $mimeTypes)` is now `public` with input validation
 - New first-class operations: `orient` (EXIF auto-rotate), `brightness`, `contrast`, `grayscale` (+ `greyscale` alias), `colorize`, `blur`, `pixelate`, `trim`, `resizeCanvas`, `padding`, `place` (watermark), `convert` (output format swap)
 - `ImageVariant::add(Operation $op)` primitive — attach `Operation` instances directly without going through a fluent builder method
