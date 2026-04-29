@@ -475,6 +475,58 @@ class ImageProcessorTest extends TestCase
     }
 
     /**
+     * Animated GIF round-trip: a 3-frame source resized through the
+     * processor should still be animated with all 3 frames intact when
+     * the default animation-preservation behavior is in effect.
+     *
+     * @return void
+     */
+    public function testAnimationPreservedByDefault(): void
+    {
+        if (!extension_loaded('imagick')) {
+            $this->markTestSkipped('Animated-image roundtrip uses Imagick to decode the variant');
+        }
+
+        $bytes = $this->captureAnimatedVariantBytes(preserveAnimation: true);
+
+        $decoded = new Imagick();
+        $decoded->readImageBlob($bytes);
+        $frames = $decoded->getNumberImages();
+        $decoded->clear();
+
+        $this->assertSame(3, $frames, 'Expected the 3-frame source to round-trip with all frames intact');
+    }
+
+    /**
+     * @return void
+     */
+    public function testAnimationFlattenedWhenPreservationDisabled(): void
+    {
+        if (!extension_loaded('imagick')) {
+            $this->markTestSkipped('Animated-image roundtrip uses Imagick to decode the variant');
+        }
+
+        $bytes = $this->captureAnimatedVariantBytes(preserveAnimation: false);
+
+        $decoded = new Imagick();
+        $decoded->readImageBlob($bytes);
+        $frames = $decoded->getNumberImages();
+        $decoded->clear();
+
+        $this->assertSame(1, $frames, 'Expected the 3-frame source to flatten to a single frame');
+    }
+
+    /**
+     * @return void
+     */
+    public function testSetPreserveAnimationIsFluent(): void
+    {
+        $processor = $this->buildProcessor();
+
+        $this->assertSame($processor, $processor->setPreserveAnimation(false));
+    }
+
+    /**
      * @return void
      */
     public function testCreateWithExplicitGdDriver(): void
@@ -742,5 +794,53 @@ class ImageProcessorTest extends TestCase
         $decoded->clear();
 
         return $profiles;
+    }
+
+    /**
+     * Runs the 3-frame animated GIF fixture through the processor with
+     * the given animation-preservation toggle and returns the encoded
+     * variant bytes.
+     *
+     * @param bool $preserveAnimation Whether to keep animation
+     *
+     * @return string
+     */
+    protected function captureAnimatedVariantBytes(bool $preserveAnimation): string
+    {
+        $captured = '';
+        $adapter = $this->createMock(FilesystemAdapter::class);
+        $adapter->method('writeStream')
+            ->willReturnCallback(function ($path, $stream) use (&$captured): void {
+                $contents = stream_get_contents($stream);
+                if ($contents !== false) {
+                    $captured = $contents;
+                }
+            });
+
+        $fileStorage = $this->createMock(FileStorageInterface::class);
+        $fileStorage->method('getStorage')->willReturn($adapter);
+
+        $processor = new ImageProcessor(
+            $fileStorage,
+            new PathBuilder(),
+            new ImageManager(new ImagickDriver()),
+        );
+        $processor->setPreserveAnimation($preserveAnimation);
+
+        $file = FileFactory::fromDisk($this->getFixtureFile('animated.gif'), 'local')
+            ->withUuid('aabbccdd-1234-5678-9abc-def012345678')
+            ->withFilename('animated.gif')
+            ->addToCollection('test')
+            ->belongsToModel('User', '1');
+
+        $collection = ImageVariantCollection::create();
+        $collection->addNew('thumbnail')->resize(16, 16);
+        $file = $file->withVariants($collection->toArray());
+
+        $processor->process($file);
+
+        $this->assertNotSame('', $captured, 'Encoded variant was not captured');
+
+        return $captured;
     }
 }
