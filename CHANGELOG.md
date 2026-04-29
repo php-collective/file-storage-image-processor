@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `cover()` no longer accepts a `$callback` parameter (it was always ignored)
 - `flipHorizontal()` now produces an actual horizontal mirror (1.x silently produced a vertical flip due to a v3 quirk; output of pipelines using this op will change)
 - EXIF/metadata is now stripped from encoded output by default; call `setStripExif(false)` to preserve
+- Several internal throws moved into the `ImageProcessingException` hierarchy. Code catching the previous raw types may need to widen to the typed equivalents:
+  - `Driver::Auto` with neither Imagick nor GD installed now throws `DriverUnavailableException` (was a raw `RuntimeException`)
+  - `process()` failing to decode the source now throws `ImageCorruptedException` wrapping the underlying intervention exception (was the raw intervention exception itself)
+  - The encode path with a missing file extension now throws `UnsupportedFormatException` (was a raw `InvalidArgumentException`)
 
 ### Added
 
@@ -31,7 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New first-class operations: `orient` (EXIF auto-rotate), `brightness`, `contrast`, `grayscale` (+ `greyscale` alias), `colorize`, `blur`, `pixelate`, `trim`, `resizeCanvas`, `padding`, `place` (watermark), `convert` (output format swap)
 - `ImageVariant::add(Operation $op)` primitive — attach `Operation` instances directly without going through a fluent builder method
 - `OperationRegistry` is the single source of truth for which operations exist; pass a custom registry to `ImageProcessor` to add app-specific operations without forking
-- `Driver`, `Position`, `FlipDirection` enums replacing magic strings throughout the public API. Each enum has a `fromName()` method that does case/whitespace normalisation for config-driven callers
+- `Driver`, `Position`, `FlipDirection`, `Format` enums replacing magic strings throughout the public API. Each enum has a `fromName()` method that does case/whitespace normalisation for config-driven callers. `Format::fromName()` also recognises common aliases (`jpg` → `Jpeg`, `tif` → `Tiff`, `pjpeg` → `Pjpg`, `heif` → `Heic`, `j2k` / `jp2k` → `Jp2`)
+- `convert()` operation now accepts a `Format` enum case (preferred) in addition to a string
+- New typed exceptions extending `ImageProcessingException`:
+  - `ImageCorruptedException` — wraps `intervention/image` decode failures during `process()`. Catch this to handle truncated uploads / wrong-extension files / unsupported codecs uniformly
+  - `UnsupportedFormatException` — thrown by `encodeImage()` when the variant has no usable file extension; replaces the previous raw `InvalidArgumentException` at that boundary
+  - `DriverUnavailableException` — thrown by `Driver::Auto` when neither Imagick nor GD is installed; replaces the previous raw `RuntimeException`
 - Wider default MIME type allowlist: `image/avif`, `image/bmp`, `image/heic`, `image/heif`, `image/tiff`, `image/webp` on top of the existing `image/gif`/`jpg`/`jpeg`/`png`
 - Encoder allowlist for `quality:` / `strip:` named args extended to cover `pjpg`/`pjpeg`/`heif`/`tif`/`jp2`/`j2k`
 
