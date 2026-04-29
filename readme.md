@@ -67,9 +67,12 @@ $file = $imageProcessor->process($file);
 ```php
 $imageProcessor
     ->setQuality(['webp' => 80, 'jpg' => 90, 'avif' => 70]) // per-format
-    ->setStripExif(true)         // privacy + smaller files (default)
-    ->setPreserveProfile(true);  // keep wide-gamut color rendering (default)
+    ->setStripExif(true)            // privacy + smaller files (default)
+    ->setPreserveProfile(true)      // keep wide-gamut color rendering (default)
+    ->setPreserveAnimation(true);   // animated GIF/WebP keep all frames (default)
 ```
+
+`setPreserveAnimation(false)` flattens animated sources to a single frame — useful for static thumbnail variants or when converting to a non-animated format like JPEG.
 
 ### Processing a subset of variants
 
