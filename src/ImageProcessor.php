@@ -145,12 +145,16 @@ class ImageProcessor implements ProcessorInterface
      * after decoding and re-applied to the encoded variant so wide-gamut
      * sources (DisplayP3, AdobeRGB) keep rendering correctly.
      *
-     * Defaults to `false` to preserve 2.0.0 behavior. Profiles are only
-     * supported by the Imagick driver — under GD this toggle is a no-op.
+     * Defaults to `true`: color correctness is the safer default for a
+     * generic image pipeline, and the profile blob (~3 KB) is negligible
+     * compared to the visual cost of mis-rendered wide-gamut images.
+     * Profiles are only supported by the Imagick driver — under GD this
+     * toggle is effectively a no-op because GD has no concept of color
+     * profiles, and any setProfile failure is swallowed silently.
      *
      * @var bool
      */
-    protected bool $preserveProfile = false;
+    protected bool $preserveProfile = true;
 
     /**
      * @param \PhpCollective\Infrastructure\Storage\FileStorageInterface $storageHandler File Storage Handler

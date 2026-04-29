@@ -288,6 +288,70 @@ class ImageProcessorTest extends TestCase
     }
 
     /**
+     * Profile preservation is on by default. Verified indirectly by running
+     * the strip-then-process test without the explicit toggle and confirming
+     * the source profile still ends up on the encoded variant.
+     *
+     * @return void
+     */
+    public function testIccProfilePreservedByDefault(): void
+    {
+        if (!extension_loaded('imagick')) {
+            $this->markTestSkipped('ICC profile preservation requires the Imagick PHP extension');
+        }
+
+        $iccData = $this->loadSystemIccProfile();
+        if ($iccData === null) {
+            $this->markTestSkipped('No system ICC profile available to build the test fixture');
+        }
+
+        $fixturePath = $this->buildFixtureWithProfile($iccData);
+
+        try {
+            $captured = '';
+            $adapter = $this->createMock(FilesystemAdapter::class);
+            $adapter->method('writeStream')
+                ->willReturnCallback(function ($path, $stream) use (&$captured): void {
+                    $contents = stream_get_contents($stream);
+                    if ($contents !== false) {
+                        $captured = $contents;
+                    }
+                });
+
+            $fileStorage = $this->createMock(FileStorageInterface::class);
+            $fileStorage->method('getStorage')->willReturn($adapter);
+
+            // No setPreserveProfile() call — relies on the default
+            $processor = new ImageProcessor(
+                $fileStorage,
+                new PathBuilder(),
+                new ImageManager(new ImagickDriver()),
+            );
+
+            $file = FileFactory::fromDisk($fixturePath, 'local')
+                ->withUuid('aabbccdd-1234-5678-9abc-def012345678')
+                ->withFilename('iccfixture.jpg')
+                ->addToCollection('test')
+                ->belongsToModel('User', '1');
+
+            $collection = ImageVariantCollection::create();
+            $collection->addNew('thumb')
+                ->resize(32, 32)
+                ->callback(static function ($image): void {
+                    $image->removeProfile();
+                });
+            $file = $file->withVariants($collection->toArray());
+
+            $processor->process($file);
+
+            $this->assertNotSame('', $captured);
+            $this->assertArrayHasKey('icc', $this->profilesOf($captured));
+        } finally {
+            @unlink($fixturePath);
+        }
+    }
+
+    /**
      * @return \PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor
      */
     protected function buildProcessor(): ImageProcessor
