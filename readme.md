@@ -33,6 +33,7 @@ composer require php-collective/file-storage-image-processor
 
 ```php
 use PhpCollective\Infrastructure\Storage\Processor\Image\Driver;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Format;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Position;
@@ -53,10 +54,10 @@ $collection->addNew('avatar')
     ->cover(150, 150, Position::TopCenter)
     ->optimize();
 
-// Re-encode a JPEG source as WebP
+// Re-encode a JPEG source as WebP — Format enum or string both work
 $collection->addNew('webp')
     ->scale(800, 600)
-    ->convert('webp');
+    ->convert(Format::Webp);
 
 $file = $file->withVariants($collection->toArray());
 $file = $imageProcessor->process($file);

@@ -14,7 +14,7 @@ use Intervention\Image\Drivers\Gd\Driver as InterventionGdDriver;
 use Intervention\Image\Drivers\Imagick\Driver as InterventionImagickDriver;
 use Intervention\Image\Interfaces\DriverInterface;
 use InvalidArgumentException;
-use RuntimeException;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\DriverUnavailableException;
 
 /**
  * Identifies which intervention/image driver `ImageProcessor::create()`
@@ -88,7 +88,7 @@ enum Driver: string
     }
 
     /**
-     * @throws \RuntimeException
+     * @throws \PhpCollective\Infrastructure\Storage\Processor\Image\Exception\DriverUnavailableException
      *
      * @return \Intervention\Image\Interfaces\DriverInterface
      */
@@ -101,9 +101,6 @@ enum Driver: string
             return new InterventionGdDriver();
         }
 
-        throw new RuntimeException(
-            'Neither the Imagick nor the GD PHP extension is available; '
-            . 'install one or pass a configured ImageManager to the constructor instead.',
-        );
+        throw DriverUnavailableException::autoDetectFailed();
     }
 }

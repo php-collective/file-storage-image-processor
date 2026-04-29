@@ -13,6 +13,7 @@ namespace PhpCollective\Test\TestCase\Processor\Image\Operation;
 use Intervention\Image\Direction;
 use Intervention\Image\Interfaces\ImageInterface;
 use PhpCollective\Infrastructure\Storage\Processor\Image\FlipDirection;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Format;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Blur;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Brightness;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Callback;
@@ -324,7 +325,7 @@ class OperationTest extends TestCase
         $context = new OperationContext($image);
 
         $this->assertNull($context->outputFormat);
-        (new Convert('WEBP'))->apply($context);
+        (new Convert(Format::Webp))->apply($context);
         $this->assertSame('webp', $context->outputFormat);
     }
 

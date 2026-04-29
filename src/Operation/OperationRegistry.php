@@ -14,6 +14,7 @@ use Closure;
 use InvalidArgumentException;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOperationException;
 use PhpCollective\Infrastructure\Storage\Processor\Image\FlipDirection;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Format;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Position;
 
 /**
@@ -120,7 +121,7 @@ class OperationRegistry
                 y: (int)($a['y'] ?? 0),
                 opacity: (float)($a['opacity'] ?? 1),
             ))
-            ->register('convert', static fn (array $a): Operation => new Convert((string)$a['format']))
+            ->register('convert', static fn (array $a): Operation => new Convert(self::resolveFormat($a['format'])))
             ->register('callback', static function (array $a): Operation {
                 if (!isset($a['callback']) || !$a['callback'] instanceof Closure) {
                     throw new InvalidArgumentException('Missing or non-Closure callback argument');
@@ -216,5 +217,19 @@ class OperationRegistry
         }
 
         return FlipDirection::fromName((string)$value);
+    }
+
+    /**
+     * @param mixed $value Format enum case or extension string
+     *
+     * @return \PhpCollective\Infrastructure\Storage\Processor\Image\Format
+     */
+    protected static function resolveFormat(mixed $value): Format
+    {
+        if ($value instanceof Format) {
+            return $value;
+        }
+
+        return Format::fromName((string)$value);
     }
 }

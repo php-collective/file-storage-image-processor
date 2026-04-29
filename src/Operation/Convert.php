@@ -10,6 +10,8 @@
 
 namespace PhpCollective\Infrastructure\Storage\Processor\Image\Operation;
 
+use PhpCollective\Infrastructure\Storage\Processor\Image\Format;
+
 /**
  * Re-encode the variant in a different format than the source. Sets
  * the output format on the context; the processor reads it back and
@@ -18,9 +20,9 @@ namespace PhpCollective\Infrastructure\Storage\Processor\Image\Operation;
 final class Convert implements Operation
 {
     /**
-     * @param string $format Target file extension, e.g. 'webp'
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Format $format Target output format
      */
-    public function __construct(public readonly string $format)
+    public function __construct(public readonly Format $format)
     {
     }
 
@@ -31,11 +33,11 @@ final class Convert implements Operation
 
     public function apply(OperationContext $context): void
     {
-        $context->outputFormat = strtolower($this->format);
+        $context->outputFormat = $this->format->value;
     }
 
     public function toArray(): array
     {
-        return ['format' => $this->format];
+        return ['format' => $this->format->value];
     }
 }

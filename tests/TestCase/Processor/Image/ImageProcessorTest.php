@@ -28,6 +28,7 @@ use PhpCollective\Infrastructure\Storage\FileFactory;
 use PhpCollective\Infrastructure\Storage\FileStorageInterface;
 use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilder;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Driver as ImageDriver;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\ImageCorruptedException;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
 use PhpCollective\Test\TestCase\TestCase;
@@ -844,5 +845,37 @@ class ImageProcessorTest extends TestCase
         $this->assertNotSame('', $captured, 'Encoded variant was not captured');
 
         return $captured;
+    }
+
+    /**
+     * Feeds a corrupt JPEG into the processor and expects the
+     * intervention/image decode failure to be wrapped in our
+     * ImageCorruptedException.
+     *
+     * @return void
+     */
+    public function testCorruptImageThrowsImageCorruptedException(): void
+    {
+        $corruptPath = sys_get_temp_dir() . '/' . uniqid('corrupt_', true) . '.jpg';
+        file_put_contents($corruptPath, 'this is not a jpeg');
+
+        try {
+            $processor = $this->buildProcessor();
+
+            $file = FileFactory::fromDisk($corruptPath, 'local')
+                ->withUuid('aabbccdd-1234-5678-9abc-def012345678')
+                ->withFilename('corrupt.jpg')
+                ->addToCollection('test')
+                ->belongsToModel('User', '1');
+
+            $collection = ImageVariantCollection::create();
+            $collection->addNew('thumb')->resize(32, 32);
+            $file = $file->withVariants($collection->toArray());
+
+            $this->expectException(ImageCorruptedException::class);
+            $processor->process($file);
+        } finally {
+            @unlink($corruptPath);
+        }
     }
 }

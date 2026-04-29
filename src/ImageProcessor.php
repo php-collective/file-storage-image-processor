@@ -23,7 +23,9 @@ use League\Flysystem\FilesystemAdapter;
 use PhpCollective\Infrastructure\Storage\FileInterface;
 use PhpCollective\Infrastructure\Storage\FileStorageInterface;
 use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilderInterface;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\ImageCorruptedException;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\TempFileCreationFailedException;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedFormatException;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\OperationContext;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\OperationRegistry;
 use PhpCollective\Infrastructure\Storage\Processor\ProcessorInterface;
@@ -510,7 +512,11 @@ class ImageProcessor implements ProcessorInterface
         string $tempFile,
         FilesystemAdapter $storage,
     ): FileInterface {
-        $image = $this->imageManager->decodePath($tempFile);
+        try {
+            $image = $this->imageManager->decodePath($tempFile);
+        } catch (Throwable $decodeError) {
+            throw ImageCorruptedException::withPath($tempFile, $decodeError);
+        }
 
         if (!$this->preserveAnimation && $image->isAnimated()) {
             $image->removeAnimation();
@@ -649,14 +655,14 @@ class ImageProcessor implements ProcessorInterface
      * @param \Intervention\Image\Interfaces\ImageInterface $image Image
      * @param string|null $extension File extension
      *
-     * @throws \InvalidArgumentException If extension is empty
+     * @throws \PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedFormatException If extension is empty
      *
      * @return \Intervention\Image\Interfaces\EncodedImageInterface
      */
     protected function encodeImage(ImageInterface $image, ?string $extension): EncodedImageInterface
     {
         if ($extension === null || $extension === '') {
-            throw new InvalidArgumentException('Cannot encode image without a file extension');
+            throw UnsupportedFormatException::missingExtension();
         }
 
         $extension = strtolower($extension);

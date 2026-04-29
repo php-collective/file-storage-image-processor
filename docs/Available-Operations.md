@@ -208,14 +208,19 @@ $collection->addNew('watermarked')
 
 ## Format / output
 
-### `convert(string $format)`
+### `convert(Format|string $format)`
 
-Re-encode the variant in a different format than the source. The variant's stored path's extension is swapped to match.
+Re-encode the variant in a different format than the source. The variant's stored path's extension is swapped to match. Accepts the `Format` enum (preferred — type-safe) or an extension string for config-driven setups; aliases like `jpg` / `tif` / `pjpeg` / `heif` resolve to their canonical case.
 
 ```php
+use PhpCollective\Infrastructure\Storage\Processor\Image\Format;
+
 $collection->addNew('webp-version')
     ->scale(1200, 800)
-    ->convert('webp');
+    ->convert(Format::Webp);
+
+// Config-driven
+$collection->addNew('config-driven')->convert($config['format'] ?? 'webp');
 ```
 
 ### `optimize()`

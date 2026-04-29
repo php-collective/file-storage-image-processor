@@ -426,13 +426,19 @@ class ImageVariant extends Variant
 
     /**
      * Re-encode the variant in a different format than the source.
+     * Pass a `Format` enum case (preferred — type-safe) or an
+     * equivalent extension string for config-driven setups.
      *
-     * @param string $format Target file extension, e.g. 'webp'
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Format|string $format Target output format
      *
      * @return $this
      */
-    public function convert(string $format)
+    public function convert(Format|string $format)
     {
+        if (is_string($format)) {
+            $format = Format::fromName($format);
+        }
+
         $this->add(new Convert($format));
 
         return $this;
