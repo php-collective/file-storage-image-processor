@@ -56,10 +56,10 @@
             "phpunit --coverage-html ./tmp/coverage"
         ],
         "cs-check": [
-            "phpcs -s"
+            "phpcs -s --parallel=16"
         ],
         "cs-fix": [
-            "phpcbf"
+            "phpcbf --parallel=16"
         ],
         "stan": [
             "phpstan analyze"

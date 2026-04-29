@@ -62,4 +62,4 @@ jobs:
       run: vendor/bin/phpstan --error-format=github
 
     - name: Run phpcs
-      run: vendor/bin/phpcs --report=checkstyle
+      run: vendor/bin/phpcs
