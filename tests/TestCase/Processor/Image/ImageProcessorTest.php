@@ -36,6 +36,7 @@ use ReflectionClass;
 /**
  * ImageProcessorTest
  */
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class ImageProcessorTest extends TestCase
 {
     /**
