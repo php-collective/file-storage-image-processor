@@ -14,10 +14,43 @@
 
 namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
+use Closure;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Blur;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Brightness;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Callback;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Colorize;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Contrast;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Convert;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Cover;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Crop;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Flip;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\FlipHorizontal;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\FlipVertical;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Grayscale;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Heighten;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Operation;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Orient;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Padding;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Pixelate;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Place;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Resize;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\ResizeCanvas;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Rotate;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Scale;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Sharpen;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Trim;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Widen;
 use PhpCollective\Infrastructure\Storage\Processor\Variant;
 
 /**
  * Image Manipulation
+ *
+ * Each fluent builder method below is a thin wrapper around an
+ * `Operation` class — `cover()` constructs `Cover`, `resize()`
+ * constructs `Resize`, etc. The Operation class is the canonical
+ * source of truth for an operation's parameters. Use `add()`
+ * directly when you want to attach an `Operation` instance built
+ * elsewhere (custom registry, factory).
  */
 class ImageVariant extends Variant
 {
@@ -26,7 +59,7 @@ class ImageVariant extends Variant
     /**
      * @var array<string, array<string, mixed>>
      */
-    protected array $operations;
+    protected array $operations = [];
 
     protected string $path = '';
 
@@ -60,49 +93,63 @@ class ImageVariant extends Variant
     }
 
     /**
-     * @param int $width Width
-     * @param int $height Height
-     * @param int|null $x X
-     * @param int|null $y Y
+     * Attaches an Operation to the variant. Used by every fluent
+     * builder method on this class as the underlying primitive, and
+     * exposed for callers that want to pass operation instances
+     * built elsewhere (e.g. from a custom factory).
+     *
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Operation $operation Operation
      *
      * @return $this
      */
-    public function crop(int $width, int $height, ?int $x = null, ?int $y = null)
+    public function add(Operation $operation)
     {
-        $this->operations['crop'] = [
-            'width' => $width,
-            'height' => $height,
-            'x' => $x,
-            'y' => $y,
-        ];
+        $this->operations[$operation->name()] = $operation->toArray();
 
         return $this;
     }
 
     /**
-     * @param int $amount Angle
+     * @param int $width Width
+     * @param int $height Height
+     * @param int|null $x X
+     * @param int|null $y Y
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Position $position Alignment when x/y are not set
+     *
+     * @return $this
+     */
+    public function crop(
+        int $width,
+        int $height,
+        ?int $x = null,
+        ?int $y = null,
+        Position $position = Position::Center,
+    ) {
+        $this->add(new Crop($width, $height, $x, $y, $position));
+
+        return $this;
+    }
+
+    /**
+     * @param int $amount Amount, 0 to 100
      *
      * @return $this
      */
     public function sharpen(int $amount)
     {
-        $this->operations['sharpen'] = [
-            'amount' => $amount,
-        ];
+        $this->add(new Sharpen($amount));
 
         return $this;
     }
 
     /**
-     * @param int $angle Angle
+     * @param int $angle Angle in degrees
      *
      * @return $this
      */
     public function rotate(int $angle)
     {
-        $this->operations['rotate'] = [
-            'angle' => $angle,
-        ];
+        $this->add(new Rotate($angle));
 
         return $this;
     }
@@ -115,10 +162,7 @@ class ImageVariant extends Variant
      */
     public function heighten(int $height, bool $preventUpscale = false)
     {
-        $this->operations['heighten'] = [
-            'height' => $height,
-            'preventUpscale' => $preventUpscale,
-        ];
+        $this->add(new Heighten($height, $preventUpscale));
 
         return $this;
     }
@@ -131,17 +175,12 @@ class ImageVariant extends Variant
      */
     public function widen(int $width, bool $preventUpscale = false)
     {
-        $this->operations['widen'] = [
-            'width' => $width,
-            'preventUpscale' => $preventUpscale,
-        ];
+        $this->add(new Widen($width, $preventUpscale));
 
         return $this;
     }
 
     /**
-     * Resizes the image to exact dimensions (does not preserve aspect ratio)
-     *
      * @param int $width Width
      * @param int $height Height
      * @param bool $preventUpscale Prevents upscaling
@@ -150,18 +189,12 @@ class ImageVariant extends Variant
      */
     public function resize(int $width, int $height, bool $preventUpscale = false)
     {
-        $this->operations['resize'] = [
-            'width' => $width,
-            'height' => $height,
-            'preventUpscale' => $preventUpscale,
-        ];
+        $this->add(new Resize($width, $height, $preventUpscale));
 
         return $this;
     }
 
     /**
-     * Scales the image while preserving aspect ratio
-     *
      * @param int $width Width
      * @param int $height Height
      * @param bool $preventUpscale Prevents upscaling
@@ -170,43 +203,32 @@ class ImageVariant extends Variant
      */
     public function scale(int $width, int $height, bool $preventUpscale = false)
     {
-        $this->operations['scale'] = [
-            'width' => $width,
-            'height' => $height,
-            'preventUpscale' => $preventUpscale,
-        ];
+        $this->add(new Scale($width, $height, $preventUpscale));
 
         return $this;
     }
 
     /**
-     * Flips the image horizontal
-     *
      * @return $this
      */
     public function flipHorizontal()
     {
-        $this->operations['flipHorizontal'] = [];
+        $this->add(new FlipHorizontal());
 
         return $this;
     }
 
     /**
-     * Flips the image vertical
-     *
      * @return $this
      */
     public function flipVertical()
     {
-        $this->operations['flipVertical'] = [];
+        $this->add(new FlipVertical());
 
         return $this;
     }
 
     /**
-     * Flips the image. Accepts a `FlipDirection` enum case or one of the
-     * string codes `'h'` / `'v'` / `'horizontal'` / `'vertical'`.
-     *
      * @param \PhpCollective\Infrastructure\Storage\Processor\Image\FlipDirection|string $direction Direction
      *
      * @return $this
@@ -217,26 +239,19 @@ class ImageVariant extends Variant
             $direction = FlipDirection::fromName($direction);
         }
 
-        $this->operations['flip'] = [
-            'direction' => $direction->value,
-        ];
+        $this->add(new Flip($direction));
 
         return $this;
     }
 
     /**
-     * Allows the declaration of a callable that gets the image manager instance
-     * and the arguments passed to it.
-     *
-     * @param callable $callback callback
+     * @param callable $callback Receives the intervention/image instance
      *
      * @return $this
      */
     public function callback(callable $callback)
     {
-        $this->operations['callback'] = [
-            'callback' => $callback,
-        ];
+        $this->add(new Callback(Closure::fromCallable($callback)));
 
         return $this;
     }
@@ -244,39 +259,28 @@ class ImageVariant extends Variant
     /**
      * @param int $width Width
      * @param int $height Height
-     * @param callable|null $callback Callback
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Position $position Position
      * @param bool $preventUpscale Prevent Upscaling
-     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Position|string $position Position
      *
      * @return $this
      */
     public function cover(
         int $width,
         int $height,
-        ?callable $callback = null,
+        Position $position = Position::Center,
         bool $preventUpscale = false,
-        Position|string $position = Position::Center,
     ) {
-        $this->operations['cover'] = [
-            'width' => $width,
-            'height' => $height,
-            'callback' => $callback,
-            'preventUpscale' => $preventUpscale,
-            'position' => $position instanceof Position ? $position->value : $position,
-        ];
+        $this->add(new Cover($width, $height, $position, $preventUpscale));
 
         return $this;
     }
 
     /**
-     * Auto-rotates the image based on EXIF orientation. Best placed first
-     * to normalise camera uploads before further operations.
-     *
      * @return $this
      */
     public function orient()
     {
-        $this->operations['orient'] = [];
+        $this->add(new Orient());
 
         return $this;
     }
@@ -288,7 +292,7 @@ class ImageVariant extends Variant
      */
     public function brightness(int $level)
     {
-        $this->operations['brightness'] = ['level' => $level];
+        $this->add(new Brightness($level));
 
         return $this;
     }
@@ -300,7 +304,7 @@ class ImageVariant extends Variant
      */
     public function contrast(int $level)
     {
-        $this->operations['contrast'] = ['level' => $level];
+        $this->add(new Contrast($level));
 
         return $this;
     }
@@ -310,7 +314,7 @@ class ImageVariant extends Variant
      */
     public function grayscale()
     {
-        $this->operations['grayscale'] = [];
+        $this->add(new Grayscale());
 
         return $this;
     }
@@ -324,11 +328,7 @@ class ImageVariant extends Variant
      */
     public function colorize(int $red = 0, int $green = 0, int $blue = 0)
     {
-        $this->operations['colorize'] = [
-            'red' => $red,
-            'green' => $green,
-            'blue' => $blue,
-        ];
+        $this->add(new Colorize($red, $green, $blue));
 
         return $this;
     }
@@ -340,7 +340,7 @@ class ImageVariant extends Variant
      */
     public function blur(int $level = 5)
     {
-        $this->operations['blur'] = ['level' => $level];
+        $this->add(new Blur($level));
 
         return $this;
     }
@@ -352,7 +352,7 @@ class ImageVariant extends Variant
      */
     public function pixelate(int $size)
     {
-        $this->operations['pixelate'] = ['size' => $size];
+        $this->add(new Pixelate($size));
 
         return $this;
     }
@@ -364,7 +364,7 @@ class ImageVariant extends Variant
      */
     public function trim(int $tolerance = 0)
     {
-        $this->operations['trim'] = ['tolerance' => $tolerance];
+        $this->add(new Trim($tolerance));
 
         return $this;
     }
@@ -373,7 +373,7 @@ class ImageVariant extends Variant
      * @param int $width Canvas width
      * @param int $height Canvas height
      * @param string|null $background Background color (hex or named)
-     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Position|string $position Alignment of the original image
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Position $position Alignment of the original image
      *
      * @return $this
      */
@@ -381,14 +381,9 @@ class ImageVariant extends Variant
         int $width,
         int $height,
         ?string $background = null,
-        Position|string $position = Position::Center,
+        Position $position = Position::Center,
     ) {
-        $this->operations['resizeCanvas'] = [
-            'width' => $width,
-            'height' => $height,
-            'background' => $background,
-            'position' => $position instanceof Position ? $position->value : $position,
-        ];
+        $this->add(new ResizeCanvas($width, $height, $background, $position));
 
         return $this;
     }
@@ -401,10 +396,7 @@ class ImageVariant extends Variant
      */
     public function padding(int $amount, ?string $background = null)
     {
-        $this->operations['padding'] = [
-            'amount' => $amount,
-            'background' => $background,
-        ];
+        $this->add(new Padding(amount: $amount, background: $background));
 
         return $this;
     }
@@ -413,7 +405,7 @@ class ImageVariant extends Variant
      * Inserts a watermark or overlay on top of the image.
      *
      * @param string $image Path to overlay image
-     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Position|string $position Alignment, e.g. Position::BottomRight
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Position $position Alignment, e.g. Position::BottomRight
      * @param int $x Horizontal offset from alignment position
      * @param int $y Vertical offset from alignment position
      * @param float $opacity Opacity, 0.0 to 1.0
@@ -422,25 +414,18 @@ class ImageVariant extends Variant
      */
     public function place(
         string $image,
-        Position|string $position = Position::BottomCenter,
+        Position $position = Position::BottomCenter,
         int $x = 0,
         int $y = 0,
         float $opacity = 1.0,
     ) {
-        $this->operations['place'] = [
-            'image' => $image,
-            'position' => $position instanceof Position ? $position->value : $position,
-            'x' => $x,
-            'y' => $y,
-            'opacity' => $opacity,
-        ];
+        $this->add(new Place($image, $position, $x, $y, $opacity));
 
         return $this;
     }
 
     /**
-     * Re-encode the variant in a different format than the source. Use this
-     * to e.g. generate WebP variants from JPEG uploads.
+     * Re-encode the variant in a different format than the source.
      *
      * @param string $format Target file extension, e.g. 'webp'
      *
@@ -448,7 +433,7 @@ class ImageVariant extends Variant
      */
     public function convert(string $format)
     {
-        $this->operations['convert'] = ['format' => $format];
+        $this->add(new Convert($format));
 
         return $this;
     }
