@@ -27,69 +27,6 @@ use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOp
 class Operations
 {
     /**
-     * @deprecated Use {@see Position::Center} instead.
-     *
-     * @var string
-     */
-    public const POSITION_CENTER = Position::Center->value;
-
-    /**
-     * @deprecated Use {@see Position::TopCenter} instead.
-     *
-     * @var string
-     */
-    public const POSITION_TOP_CENTER = Position::TopCenter->value;
-
-    /**
-     * @deprecated Use {@see Position::BottomCenter} instead.
-     *
-     * @var string
-     */
-    public const POSITION_BOTTOM_CENTER = Position::BottomCenter->value;
-
-    /**
-     * @deprecated Use {@see Position::LeftTop} instead.
-     *
-     * @var string
-     */
-    public const POSITION_LEFT_TOP = Position::LeftTop->value;
-
-    /**
-     * @deprecated Use {@see Position::RightTop} instead.
-     *
-     * @var string
-     */
-    public const POSITION_RIGHT_TOP = Position::RightTop->value;
-
-    /**
-     * @deprecated Use {@see Position::LeftCenter} instead.
-     *
-     * @var string
-     */
-    public const POSITION_LEFT_CENTER = Position::LeftCenter->value;
-
-    /**
-     * @deprecated Use {@see Position::RightCenter} instead.
-     *
-     * @var string
-     */
-    public const POSITION_RIGHT_CENTER = Position::RightCenter->value;
-
-    /**
-     * @deprecated Use {@see Position::LeftBottom} instead.
-     *
-     * @var string
-     */
-    public const POSITION_LEFT_BOTTOM = Position::LeftBottom->value;
-
-    /**
-     * @deprecated Use {@see Position::RightBottom} instead.
-     *
-     * @var string
-     */
-    public const POSITION_RIGHT_BOTTOM = Position::RightBottom->value;
-
-    /**
      * @var \Intervention\Image\Interfaces\ImageInterface
      */
     protected ImageInterface $image;

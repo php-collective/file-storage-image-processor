@@ -14,6 +14,7 @@
 
 namespace PhpCollective\Test\TestCase\Processor\Image;
 
+use PhpCollective\Infrastructure\Storage\Processor\Image\FlipDirection;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariant;
 use PhpCollective\Test\TestCase\TestCase;
 
@@ -31,7 +32,7 @@ class ImageVariantTest extends TestCase
             ->resize(200, 200)
             ->flipHorizontal()
             ->flipVertical()
-            ->flip(ImageVariant::FLIP_VERTICAL)
+            ->flip(FlipDirection::Vertical)
             ->heighten(200)
             ->widen(200)
             ->crop(200, 200)

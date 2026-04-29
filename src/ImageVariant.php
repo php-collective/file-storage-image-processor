@@ -35,20 +35,6 @@ class ImageVariant extends Variant
     protected string $url = '';
 
     /**
-     * @deprecated Use {@see FlipDirection::Horizontal} instead.
-     *
-     * @var string
-     */
-    public const FLIP_HORIZONTAL = FlipDirection::Horizontal->value;
-
-    /**
-     * @deprecated Use {@see FlipDirection::Vertical} instead.
-     *
-     * @var string
-     */
-    public const FLIP_VERTICAL = FlipDirection::Vertical->value;
-
-    /**
      * @param string $name Name
      *
      * @return self
