@@ -265,7 +265,7 @@ class ImageVariant extends Variant
      * @param int $height Height
      * @param callable|null $callback Callback
      * @param bool $preventUpscale Prevent Upscaling
-     * @param string $position Position
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Position|string $position Position
      *
      * @return $this
      */
@@ -274,14 +274,14 @@ class ImageVariant extends Variant
         int $height,
         ?callable $callback = null,
         bool $preventUpscale = false,
-        string $position = 'center',
+        Position|string $position = Position::Center,
     ) {
         $this->operations['cover'] = [
             'width' => $width,
             'height' => $height,
             'callback' => $callback,
             'preventUpscale' => $preventUpscale,
-            'position' => $position,
+            'position' => $position instanceof Position ? $position->value : $position,
         ];
 
         return $this;
@@ -392,7 +392,7 @@ class ImageVariant extends Variant
      * @param int $width Canvas width
      * @param int $height Canvas height
      * @param string|null $background Background color (hex or named)
-     * @param string $position Alignment of the original image
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Position|string $position Alignment of the original image
      *
      * @return $this
      */
@@ -400,13 +400,13 @@ class ImageVariant extends Variant
         int $width,
         int $height,
         ?string $background = null,
-        string $position = 'center',
+        Position|string $position = Position::Center,
     ) {
         $this->operations['resizeCanvas'] = [
             'width' => $width,
             'height' => $height,
             'background' => $background,
-            'position' => $position,
+            'position' => $position instanceof Position ? $position->value : $position,
         ];
 
         return $this;
@@ -432,7 +432,7 @@ class ImageVariant extends Variant
      * Inserts a watermark or overlay on top of the image.
      *
      * @param string $image Path to overlay image
-     * @param string $position Alignment, e.g. 'bottom-right'
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Position|string $position Alignment, e.g. Position::BottomRight
      * @param int $x Horizontal offset from alignment position
      * @param int $y Vertical offset from alignment position
      * @param float $opacity Opacity, 0.0 to 1.0
@@ -441,14 +441,14 @@ class ImageVariant extends Variant
      */
     public function place(
         string $image,
-        string $position = 'bottom-center',
+        Position|string $position = Position::BottomCenter,
         int $x = 0,
         int $y = 0,
         float $opacity = 1.0,
     ) {
         $this->operations['place'] = [
             'image' => $image,
-            'position' => $position,
+            'position' => $position instanceof Position ? $position->value : $position,
             'x' => $x,
             'y' => $y,
             'opacity' => $opacity,

@@ -27,49 +27,67 @@ use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOp
 class Operations
 {
     /**
+     * @deprecated Use {@see Position::Center} instead.
+     *
      * @var string
      */
-    public const POSITION_CENTER = 'center';
+    public const POSITION_CENTER = Position::Center->value;
 
     /**
+     * @deprecated Use {@see Position::TopCenter} instead.
+     *
      * @var string
      */
-    public const POSITION_TOP_CENTER = 'top-center';
+    public const POSITION_TOP_CENTER = Position::TopCenter->value;
 
     /**
+     * @deprecated Use {@see Position::BottomCenter} instead.
+     *
      * @var string
      */
-    public const POSITION_BOTTOM_CENTER = 'bottom-center';
+    public const POSITION_BOTTOM_CENTER = Position::BottomCenter->value;
 
     /**
+     * @deprecated Use {@see Position::LeftTop} instead.
+     *
      * @var string
      */
-    public const POSITION_LEFT_TOP = 'left-top';
+    public const POSITION_LEFT_TOP = Position::LeftTop->value;
 
     /**
+     * @deprecated Use {@see Position::RightTop} instead.
+     *
      * @var string
      */
-    public const POSITION_RIGHT_TOP = 'right-top';
+    public const POSITION_RIGHT_TOP = Position::RightTop->value;
 
     /**
+     * @deprecated Use {@see Position::LeftCenter} instead.
+     *
      * @var string
      */
-    public const POSITION_LEFT_CENTER = 'left-center';
+    public const POSITION_LEFT_CENTER = Position::LeftCenter->value;
 
     /**
+     * @deprecated Use {@see Position::RightCenter} instead.
+     *
      * @var string
      */
-    public const POSITION_RIGHT_CENTER = 'right-center';
+    public const POSITION_RIGHT_CENTER = Position::RightCenter->value;
 
     /**
+     * @deprecated Use {@see Position::LeftBottom} instead.
+     *
      * @var string
      */
-    public const POSITION_LEFT_BOTTOM = 'left-bottom';
+    public const POSITION_LEFT_BOTTOM = Position::LeftBottom->value;
 
     /**
+     * @deprecated Use {@see Position::RightBottom} instead.
+     *
      * @var string
      */
-    public const POSITION_RIGHT_BOTTOM = 'right-bottom';
+    public const POSITION_RIGHT_BOTTOM = Position::RightBottom->value;
 
     /**
      * @var \Intervention\Image\Interfaces\ImageInterface
@@ -102,6 +120,28 @@ class Operations
     }
 
     /**
+     * Normalises a position argument to the string form intervention/image
+     * accepts. Supports `Position` enum cases (resolved via `->value`) and
+     * raw strings (passed through). `null` returns the supplied default.
+     *
+     * @param mixed $value Position value
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Position $default Fallback case
+     *
+     * @return string
+     */
+    protected function resolvePosition(mixed $value, Position $default): string
+    {
+        if ($value instanceof Position) {
+            return $value->value;
+        }
+        if (is_string($value) && $value !== '') {
+            return $value;
+        }
+
+        return $default->value;
+    }
+
+    /**
      * @param string $name Name
      * @param array<string, mixed> $arguments Arguments
      *
@@ -129,23 +169,18 @@ class Operations
             throw new InvalidArgumentException('Missing width or height');
         }
 
-        $arguments += ['position' => static::POSITION_CENTER];
+        $position = $this->resolvePosition($arguments['position'] ?? null, Position::Center);
+        $width = (int)$arguments['width'];
+        $height = (int)$arguments['height'];
         $preventUpscale = $arguments['preventUpscale'] ?? false;
+
         if ($preventUpscale) {
-            $this->image->coverDown(
-                (int)$arguments['width'],
-                (int)$arguments['height'],
-                $arguments['position'],
-            );
+            $this->image->coverDown($width, $height, $position);
 
             return;
         }
 
-        $this->image->cover(
-            (int)$arguments['width'],
-            (int)$arguments['height'],
-            $arguments['position'],
-        );
+        $this->image->cover($width, $height, $position);
     }
 
     /**
@@ -163,19 +198,19 @@ class Operations
             throw new InvalidArgumentException('Missing width or height');
         }
 
-        $arguments += ['x' => null, 'y' => null, 'position' => static::POSITION_CENTER];
-        $height = (int)$arguments['height'];
         $width = (int)$arguments['width'];
+        $height = (int)$arguments['height'];
+        $position = $this->resolvePosition($arguments['position'] ?? null, Position::Center);
+        $x = $arguments['x'] ?? null;
+        $y = $arguments['y'] ?? null;
 
-        // If x and y are explicitly provided, use coordinate-based cropping
-        if ($arguments['x'] !== null && $arguments['y'] !== null) {
-            $x = (int)$arguments['x'];
-            $y = (int)$arguments['y'];
-            $this->image->crop($width, $height, $x, $y, alignment: $arguments['position']);
-        } else {
-            // Use position-based cropping only
-            $this->image->crop($width, $height, alignment: $arguments['position']);
+        if ($x !== null && $y !== null) {
+            $this->image->crop($width, $height, (int)$x, (int)$y, alignment: $position);
+
+            return;
         }
+
+        $this->image->crop($width, $height, alignment: $position);
     }
 
     /**
@@ -479,16 +514,11 @@ class Operations
             throw new InvalidArgumentException('Missing width or height');
         }
 
-        $arguments += [
-            'background' => null,
-            'position' => static::POSITION_CENTER,
-        ];
-
         $this->image->resizeCanvas(
             (int)$arguments['width'],
             (int)$arguments['height'],
-            $arguments['background'],
-            $arguments['position'],
+            $arguments['background'] ?? null,
+            $this->resolvePosition($arguments['position'] ?? null, Position::Center),
         );
     }
 
@@ -511,7 +541,7 @@ class Operations
             $width,
             $height,
             $arguments['background'] ?? null,
-            $arguments['position'] ?? static::POSITION_CENTER,
+            $this->resolvePosition($arguments['position'] ?? null, Position::Center),
         );
     }
 
@@ -532,12 +562,13 @@ class Operations
             throw new InvalidArgumentException('Missing image');
         }
 
-        $position = $arguments['position'] ?? static::POSITION_BOTTOM_CENTER;
-        $x = (int)($arguments['x'] ?? 0);
-        $y = (int)($arguments['y'] ?? 0);
-        $opacity = (float)($arguments['opacity'] ?? 1);
-
-        $this->image->insert($arguments['image'], $x, $y, $position, $opacity);
+        $this->image->insert(
+            $arguments['image'],
+            (int)($arguments['x'] ?? 0),
+            (int)($arguments['y'] ?? 0),
+            $this->resolvePosition($arguments['position'] ?? null, Position::BottomCenter),
+            (float)($arguments['opacity'] ?? 1),
+        );
     }
 
     /**
