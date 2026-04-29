@@ -24,7 +24,6 @@ Built on top of [Intervention Image v4](https://image.intervention.io/v4).
 
 ## Requirements
 
-- PHP 8.3 or higher
 - GD or Imagick extension
 - [Intervention Image v4](https://image.intervention.io/v4)
 
