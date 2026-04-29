@@ -15,7 +15,7 @@ Built on top of [Intervention Image v4](https://image.intervention.io/v4).
 * Pluggable operation registry — add custom operations without forking
 * Optional file-size optimization via [spatie/image-optimizer](https://github.com/spatie/image-optimizer)
 * Works with League Flysystem for flexible storage backends
-* Fluent API for chaining operations
+* Fluent API for chaining operations, including repeating the same operation type multiple times
 
 ## Requirements
 
@@ -59,6 +59,11 @@ $collection->addNew('webp')
     ->scale(800, 600)
     ->convert(Format::Webp);
 
+// Repeat the same operation type without losing earlier steps
+$collection->addNew('effects')
+    ->blur(1)
+    ->blur(6);
+
 $file = $file->withVariants($collection->toArray());
 $file = $imageProcessor->process($file);
 ```
@@ -93,6 +98,8 @@ $registry = OperationRegistry::default()
 
 $processor = new ImageProcessor($storage, $pathBuilder, $imageManager, urlBuilder: null, operationRegistry: $registry);
 ```
+
+Repeated operations of the same name are preserved in order when you serialize variants with `toArray()` and rebuild them later with `ImageVariantCollection::fromArray()`.
 
 ## Documentation
 

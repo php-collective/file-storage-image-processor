@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PHP 8.3+** required (was 8.1)
 - **Intervention Image v4** required (was v3)
 - `processOnlyTheseVariants()` and `processAll()` removed; the variant filter is now a per-call argument: `$processor->process($file, ['thumbnail'])`
-- `Operations` class is gone — operations are now individual classes under `src/Operation/` resolved via `OperationRegistry`. The on-disk variant array shape is unchanged
+- `Operations` class is gone — operations are now individual classes under `src/Operation/` resolved via `OperationRegistry`. Existing single-operation entries keep the same serialized shape; repeated operations of the same name are now serialized as ordered lists
 - `Operations::POSITION_*` string constants replaced by the `Position` enum (`Position::Center`, `Position::TopCenter`, …)
 - `ImageVariant::FLIP_HORIZONTAL` / `FLIP_VERTICAL` constants replaced by the `FlipDirection` enum
 - `flip()` no longer accepts arbitrary strings — use `FlipDirection` or one of `'h'`/`'v'`/`'horizontal'`/`'vertical'`
@@ -51,6 +51,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `heighten()` and `widen()` builders had no matching executor in the old `Operations` class — they would have thrown `UnsupportedOperationException` at runtime. Both now have working operation classes
 - `flipHorizontal()` mirrors horizontally instead of vertically (see Breaking)
 - `$this->image` is no longer kept as instance state on `ImageProcessor`, so `process()` is now safely re-entrant and doesn't leak the last variant's image to anything that touches the processor afterwards
+- Repeating the same operation type on a variant no longer overwrites the earlier step. Repeated operations are preserved and executed in insertion order
+- `ImageVariantCollection::fromArray()` now preserves serialized variant URLs in addition to paths and operations
+- `convert()` now appends the requested extension when the source variant path has no extension to replace
+- CI now installs `imagick`, so the Imagick-specific ICC, animation, and driver-selection tests run instead of being skipped
 
 ### Removed
 

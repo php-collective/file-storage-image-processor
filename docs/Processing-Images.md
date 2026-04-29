@@ -61,6 +61,11 @@ $collection->addNew('resizeAndFlip')
 $collection->addNew('crop')
     ->crop(100, 100);
 
+// Repeating the same operation type keeps both steps in order
+$collection->addNew('effects')
+    ->blur(1)
+    ->blur(6);
+
 $file = $file->withVariants($collection->toArray());
 
 // Process ALL variants (default)
@@ -113,3 +118,22 @@ $file = $imageProcessor->process($file);
 ```
 
 The filter is **per-call** — there's no leakage between invocations, so it's safe to share an `ImageProcessor` instance across requests / queue workers.
+
+## Variant serialization
+
+`ImageVariantCollection::toArray()` preserves operation order, including repeated operations of the same name. Single operations keep the legacy shape:
+
+```php
+'resize' => ['width' => 300, 'height' => 300]
+```
+
+If the same operation is added more than once, that entry becomes a list:
+
+```php
+'blur' => [
+    ['level' => 1],
+    ['level' => 6],
+]
+```
+
+`ImageVariantCollection::fromArray()` accepts both shapes and rebuilds the variant chain in the same order.

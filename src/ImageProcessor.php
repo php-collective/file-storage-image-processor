@@ -32,6 +32,7 @@ use PhpCollective\Infrastructure\Storage\Processor\ProcessorInterface;
 use PhpCollective\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface;
 use PhpCollective\Infrastructure\Storage\Utility\TemporaryFile;
 use Throwable;
+use function is_array;
 use function PhpCollective\Infrastructure\Storage\openFile;
 
 /**
@@ -526,7 +527,9 @@ class ImageProcessor implements ProcessorInterface
 
         $context = new OperationContext($image);
         foreach ($data['operations'] as $operation => $arguments) {
-            $this->operationRegistry->resolve($operation, $arguments)->apply($context);
+            foreach ($this->normalizeOperationPayloads($arguments) as $payload) {
+                $this->operationRegistry->resolve($operation, $payload)->apply($context);
+            }
         }
 
         if ($sourceProfile !== null) {
@@ -643,7 +646,32 @@ class ImageProcessor implements ProcessorInterface
             return $path;
         }
 
-        return preg_replace('/\.[^.\/\\\]+$/', '.' . $outputFormat, $path) ?? $path;
+        $replacedPath = preg_replace('/\.[^.\/\\\]+$/', '.' . $outputFormat, $path);
+        if ($replacedPath !== null && $replacedPath !== $path) {
+            return $replacedPath;
+        }
+
+        return $path . '.' . $outputFormat;
+    }
+
+    /**
+     * @param mixed $arguments Serialized operation payload for one method
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function normalizeOperationPayloads(mixed $arguments): array
+    {
+        if (!is_array($arguments)) {
+            return [[]];
+        }
+        if ($arguments === []) {
+            return [[]];
+        }
+        if (array_is_list($arguments) && is_array($arguments[0] ?? null)) {
+            return $arguments;
+        }
+
+        return [$arguments];
     }
 
     /**

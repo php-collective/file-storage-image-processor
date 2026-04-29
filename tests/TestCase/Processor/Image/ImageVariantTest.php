@@ -96,4 +96,26 @@ class ImageVariantTest extends TestCase
 
         $this->assertEquals($expected, $result);
     }
+
+    /**
+     * @return void
+     */
+    public function testVariantPreservesRepeatedOperations(): void
+    {
+        $variant = ImageVariant::create('effects')
+            ->blur(1)
+            ->blur(9);
+
+        $this->assertSame([
+            'operations' => [
+                'blur' => [
+                    ['level' => 1],
+                    ['level' => 9],
+                ],
+            ],
+            'path' => '',
+            'url' => '',
+            'optimize' => false,
+        ], $variant->toArray());
+    }
 }

@@ -93,4 +93,28 @@ class ImageVariantCollectionTest extends TestCase
         $result = json_encode($collection);
         $this->assertEquals($expected, $result);
     }
+
+    /**
+     * @return void
+     */
+    public function testFromArrayPreservesUrlAndRepeatedOperations(): void
+    {
+        $expected = [
+            'effects' => [
+                'operations' => [
+                    'blur' => [
+                        ['level' => 1],
+                        ['level' => 9],
+                    ],
+                ],
+                'path' => '/variants/effects.webp',
+                'url' => 'https://cdn.example.test/variants/effects.webp',
+                'optimize' => false,
+            ],
+        ];
+
+        $collection = ImageVariantCollection::fromArray($expected);
+
+        $this->assertEquals($expected, $collection->toArray());
+    }
 }
