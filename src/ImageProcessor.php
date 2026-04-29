@@ -175,6 +175,39 @@ class ImageProcessor implements ProcessorInterface
     }
 
     /**
+     * Builds an ImageProcessor with the intervention/image manager wired
+     * up for you. Pass a `Driver` enum case to pick the driver:
+     *
+     *     ImageProcessor::create(Driver::Imagick, $storage, $pathBuilder);
+     *     ImageProcessor::create(Driver::Auto, $storage, $pathBuilder);
+     *
+     * Useful when the calling app does not need direct access to the
+     * `ImageManager` instance — most applications fit this case. Use the
+     * regular constructor when a custom-configured `ImageManager` is
+     * needed (e.g. with a non-default background color or font config).
+     *
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Driver $driver Driver enum case
+     * @param \PhpCollective\Infrastructure\Storage\FileStorageInterface $storageHandler File Storage Handler
+     * @param \PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilderInterface $pathBuilder Path Builder
+     * @param \PhpCollective\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface|null $urlBuilder Url Builder
+     *
+     * @return self
+     */
+    public static function create(
+        Driver $driver,
+        FileStorageInterface $storageHandler,
+        PathBuilderInterface $pathBuilder,
+        ?UrlBuilderInterface $urlBuilder = null,
+    ): self {
+        return new self(
+            $storageHandler,
+            $pathBuilder,
+            new ImageManager($driver->build()),
+            $urlBuilder,
+        );
+    }
+
+    /**
      * @param array<int, string> $mimeTypes Mime Type List
      *
      * @return $this
