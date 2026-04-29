@@ -14,7 +14,6 @@
 
 namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 
-use InvalidArgumentException;
 use PhpCollective\Infrastructure\Storage\Processor\Variant;
 
 /**
@@ -36,14 +35,18 @@ class ImageVariant extends Variant
     protected string $url = '';
 
     /**
+     * @deprecated Use {@see FlipDirection::Horizontal} instead.
+     *
      * @var string
      */
-    public const FLIP_HORIZONTAL = 'h';
+    public const FLIP_HORIZONTAL = FlipDirection::Horizontal->value;
 
     /**
+     * @deprecated Use {@see FlipDirection::Vertical} instead.
+     *
      * @var string
      */
-    public const FLIP_VERTICAL = 'v';
+    public const FLIP_VERTICAL = FlipDirection::Vertical->value;
 
     /**
      * @param string $name Name
@@ -197,9 +200,7 @@ class ImageVariant extends Variant
      */
     public function flipHorizontal()
     {
-        $this->operations['flipHorizontal'] = [
-            'direction' => self::FLIP_HORIZONTAL,
-        ];
+        $this->operations['flipHorizontal'] = [];
 
         return $this;
     }
@@ -211,33 +212,27 @@ class ImageVariant extends Variant
      */
     public function flipVertical()
     {
-        $this->operations['flipVertical'] = [
-            'direction' => self::FLIP_VERTICAL,
-        ];
+        $this->operations['flipVertical'] = [];
 
         return $this;
     }
 
     /**
-     * Flips the image
+     * Flips the image. Accepts a `FlipDirection` enum case or one of the
+     * string codes `'h'` / `'v'` / `'horizontal'` / `'vertical'`.
      *
-     * @param string $direction Direction, h or v
-     *
-     * @throws \InvalidArgumentException
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\FlipDirection|string $direction Direction
      *
      * @return $this
      */
-    public function flip(string $direction)
+    public function flip(FlipDirection|string $direction)
     {
-        if ($direction !== 'h' && $direction !== 'v') {
-            throw new InvalidArgumentException(sprintf(
-                '`%s` is invalid, provide `h` or `v`',
-                $direction,
-            ));
+        if (is_string($direction)) {
+            $direction = FlipDirection::fromName($direction);
         }
 
         $this->operations['flip'] = [
-            'direction' => $direction,
+            'direction' => $direction->value,
         ];
 
         return $this;

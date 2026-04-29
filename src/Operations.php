@@ -248,19 +248,14 @@ class Operations
             throw new InvalidArgumentException('Direction missing');
         }
 
-        if ($arguments['direction'] !== 'v' && $arguments['direction'] !== 'h') {
-            throw new InvalidArgumentException(
-                'Invalid argument, you must provide h or v',
-            );
-        }
-
-        if ($arguments['direction'] === 'h') {
-            $this->image->flip(Direction::HORIZONTAL);
+        $direction = $arguments['direction'];
+        if ($direction instanceof FlipDirection) {
+            $this->image->flip($direction->intervention());
 
             return;
         }
 
-        $this->image->flip(Direction::VERTICAL);
+        $this->image->flip(FlipDirection::fromName((string)$direction)->intervention());
     }
 
     /**

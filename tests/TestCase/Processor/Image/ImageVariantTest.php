@@ -54,12 +54,8 @@ class ImageVariantTest extends TestCase
                     'height' => 200,
                     'preventUpscale' => false,
                 ],
-                'flipHorizontal' => [
-                    'direction' => 'h',
-                ],
-                'flipVertical' => [
-                    'direction' => 'v',
-                ],
+                'flipHorizontal' => [],
+                'flipVertical' => [],
                 'flip' => [
                     'direction' => 'v',
                 ],
