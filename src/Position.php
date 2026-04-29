@@ -41,7 +41,7 @@ enum Position: string
     /**
      * Resolves a position name (e.g. from a config array) to the matching
      * enum case. Lower-cases and trims the input so values like `'CENTER'`
-     * or `'  top-left  '` resolve correctly.
+     * or `' top-left '` resolve correctly.
      *
      * @param string $name Position name
      *
