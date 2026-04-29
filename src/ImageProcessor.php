@@ -83,11 +83,6 @@ class ImageProcessor implements ProcessorInterface
     ];
 
     /**
-     * @var array<int, string>
-     */
-    protected array $processOnlyTheseVariants = [];
-
-    /**
      * @var \PhpCollective\Infrastructure\Storage\FileStorageInterface
      */
     protected FileStorageInterface $storageHandler;
@@ -356,28 +351,6 @@ class ImageProcessor implements ProcessorInterface
     }
 
     /**
-     * @param array<int, string> $variants Variants by name
-     *
-     * @return $this
-     */
-    public function processOnlyTheseVariants(array $variants)
-    {
-        $this->processOnlyTheseVariants = $variants;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function processAll()
-    {
-        $this->processOnlyTheseVariants = [];
-
-        return $this;
-    }
-
-    /**
      * Copies the source file's bytes into the given temp-file stream,
      * preferring the in-memory resource on the file object when present
      * and falling back to a fresh read from storage. Closes the temp
@@ -418,26 +391,33 @@ class ImageProcessor implements ProcessorInterface
     /**
      * @param string $variant Variant name
      * @param array<string, mixed> $variantData Variant data
+     * @param array<int, string>|null $only Names to process; `null` processes everything
      *
      * @return bool
      */
-    protected function shouldProcessVariant(string $variant, array $variantData): bool
+    protected function shouldProcessVariant(string $variant, array $variantData, ?array $only): bool
     {
-        return !(
-            // Empty operations
-            empty($variantData['operations'])
-            || (
-                // Check if the operation should be processed
-                !empty($this->processOnlyTheseVariants)
-                && !in_array($variant, $this->processOnlyTheseVariants, true)
-            )
-        );
+        if (empty($variantData['operations'])) {
+            return false;
+        }
+        if ($only === null) {
+            return true;
+        }
+
+        return in_array($variant, $only, true);
     }
 
     /**
      * @inheritDoc
+     *
+     * @param \PhpCollective\Infrastructure\Storage\FileInterface $file File
+     * @param array<int, string>|null $only Optional list of variant names to
+     *     process. `null` (default) processes every variant defined on the
+     *     file. Pass an explicit list — e.g. `['thumbnail']` — to skip the
+     *     others on this single call. The filter does NOT persist across
+     *     subsequent process() invocations.
      */
-    public function process(FileInterface $file): FileInterface
+    public function process(FileInterface $file, ?array $only = null): FileInterface
     {
         if (!$this->isApplicable($file)) {
             return $file;
@@ -452,7 +432,7 @@ class ImageProcessor implements ProcessorInterface
 
         try {
             foreach ($file->variants() as $variant => $data) {
-                if (!$this->shouldProcessVariant($variant, $data)) {
+                if (!$this->shouldProcessVariant($variant, $data, $only)) {
                     continue;
                 }
 

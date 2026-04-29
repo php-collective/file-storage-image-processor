@@ -387,6 +387,94 @@ class ImageProcessorTest extends TestCase
     }
 
     /**
+     * Variant filter is now a per-call argument; the default null processes
+     * every variant on the file.
+     *
+     * @return void
+     */
+    public function testProcessWithoutFilterProcessesAllVariants(): void
+    {
+        $processor = $this->buildProcessor();
+
+        $file = FileFactory::fromDisk($this->getFixtureFile('titus.jpg'), 'local')
+            ->withUuid('aabb1100-2200-3300-4400-aabbccddeeff')
+            ->withFilename('foobar.jpg')
+            ->addToCollection('avatar')
+            ->belongsToModel('User', '1');
+
+        $collection = ImageVariantCollection::create();
+        $collection->addNew('thumbnail')->resize(100, 100);
+        $collection->addNew('hero')->resize(800, 400);
+
+        $file = $file->withVariants($collection->toArray());
+        $file = $processor->process($file);
+
+        $variants = $file->variants();
+        $this->assertNotSame('', $variants['thumbnail']['path']);
+        $this->assertNotSame('', $variants['hero']['path']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testProcessWithFilterSkipsUnselectedVariants(): void
+    {
+        $processor = $this->buildProcessor();
+
+        $file = FileFactory::fromDisk($this->getFixtureFile('titus.jpg'), 'local')
+            ->withUuid('aabb1100-2200-3300-4400-aabbccddeeff')
+            ->withFilename('foobar.jpg')
+            ->addToCollection('avatar')
+            ->belongsToModel('User', '1');
+
+        $collection = ImageVariantCollection::create();
+        $collection->addNew('thumbnail')->resize(100, 100);
+        $collection->addNew('hero')->resize(800, 400);
+
+        $file = $file->withVariants($collection->toArray());
+        $file = $processor->process($file, ['thumbnail']);
+
+        $variants = $file->variants();
+        $this->assertNotSame('', $variants['thumbnail']['path']);
+        $this->assertSame('', $variants['hero']['path'], 'hero variant should not have been written');
+    }
+
+    /**
+     * Filter does not persist between calls — each process() runs with
+     * exactly the filter passed to that invocation.
+     *
+     * @return void
+     */
+    public function testProcessFilterDoesNotLeakAcrossCalls(): void
+    {
+        $processor = $this->buildProcessor();
+
+        $build = function () {
+            $file = FileFactory::fromDisk($this->getFixtureFile('titus.jpg'), 'local')
+                ->withUuid('aabb1100-2200-3300-4400-aabbccddeeff')
+                ->withFilename('foobar.jpg')
+                ->addToCollection('avatar')
+                ->belongsToModel('User', '1');
+
+            $collection = ImageVariantCollection::create();
+            $collection->addNew('thumbnail')->resize(100, 100);
+            $collection->addNew('hero')->resize(800, 400);
+
+            return $file->withVariants($collection->toArray());
+        };
+
+        // First call filters to thumbnail
+        $first = $processor->process($build(), ['thumbnail']);
+        $this->assertNotSame('', $first->variants()['thumbnail']['path']);
+        $this->assertSame('', $first->variants()['hero']['path']);
+
+        // Second call has no filter — both variants should be written
+        $second = $processor->process($build());
+        $this->assertNotSame('', $second->variants()['thumbnail']['path']);
+        $this->assertNotSame('', $second->variants()['hero']['path']);
+    }
+
+    /**
      * @return void
      */
     public function testCreateWithExplicitGdDriver(): void
