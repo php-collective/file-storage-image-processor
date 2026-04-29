@@ -24,6 +24,8 @@ use PhpCollective\Infrastructure\Storage\FileInterface;
 use PhpCollective\Infrastructure\Storage\FileStorageInterface;
 use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilderInterface;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\TempFileCreationFailedException;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\OperationContext;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\OperationRegistry;
 use PhpCollective\Infrastructure\Storage\Processor\ProcessorInterface;
 use PhpCollective\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface;
 use PhpCollective\Infrastructure\Storage\Utility\TemporaryFile;
@@ -148,21 +150,29 @@ class ImageProcessor implements ProcessorInterface
     protected bool $preserveProfile = true;
 
     /**
+     * @var \PhpCollective\Infrastructure\Storage\Processor\Image\Operation\OperationRegistry
+     */
+    protected OperationRegistry $operationRegistry;
+
+    /**
      * @param \PhpCollective\Infrastructure\Storage\FileStorageInterface $storageHandler File Storage Handler
      * @param \PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilderInterface $pathBuilder Path Builder
      * @param \Intervention\Image\ImageManager $imageManager Image Manager
      * @param \PhpCollective\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface|null $urlBuilder
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Operation\OperationRegistry|null $operationRegistry Custom operation registry; defaults to the built-in set
      */
     public function __construct(
         FileStorageInterface $storageHandler,
         PathBuilderInterface $pathBuilder,
         ImageManager $imageManager,
         ?UrlBuilderInterface $urlBuilder = null,
+        ?OperationRegistry $operationRegistry = null,
     ) {
         $this->storageHandler = $storageHandler;
         $this->pathBuilder = $pathBuilder;
         $this->imageManager = $imageManager;
         $this->urlBuilder = $urlBuilder;
+        $this->operationRegistry = $operationRegistry ?? OperationRegistry::default();
     }
 
     /**
@@ -469,16 +479,16 @@ class ImageProcessor implements ProcessorInterface
 
         $sourceProfile = $this->preserveProfile ? $this->captureProfile($image) : null;
 
-        $operations = new Operations($image);
+        $context = new OperationContext($image);
         foreach ($data['operations'] as $operation => $arguments) {
-            $operations->{$operation}($arguments);
+            $this->operationRegistry->resolve($operation, $arguments)->apply($context);
         }
 
         if ($sourceProfile !== null) {
             $this->restoreProfile($image, $sourceProfile);
         }
 
-        $outputFormat = $operations->getOutputFormat();
+        $outputFormat = $context->outputFormat;
         $extension = $outputFormat ?? $file->extension();
         $path = $this->pathForVariant($file, $variant, $outputFormat);
 

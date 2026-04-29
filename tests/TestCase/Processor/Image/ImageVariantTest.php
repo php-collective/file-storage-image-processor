@@ -73,6 +73,7 @@ class ImageVariantTest extends TestCase
                     'height' => 200,
                     'x' => null,
                     'y' => null,
+                    'position' => 'center',
                 ],
                 'rotate' => [
                     'angle' => 90,
@@ -83,9 +84,8 @@ class ImageVariantTest extends TestCase
                 'cover' => [
                     'width' => 200,
                     'height' => 200,
-                    'callback' => null,
-                    'preventUpscale' => false,
                     'position' => 'center',
+                    'preventUpscale' => false,
                 ],
             ],
             'path' => '/',
