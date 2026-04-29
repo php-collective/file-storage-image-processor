@@ -18,7 +18,7 @@
         "php": ">=8.3",
         "ext-json": "*",
         "intervention/image": "^4.0",
-        "spatie/image-optimizer": "^1.2.0"
+        "spatie/image-optimizer": "^1.8.0"
     },
     "require-dev": {
         "php-collective/file-storage": "^1.0.0",
@@ -63,6 +63,8 @@
         ],
         "stan": [
             "phpstan analyze"
-        ]
+        ],
+        "lowest": "validate-prefer-lowest",
+        "lowest-setup": "composer update --prefer-lowest --prefer-stable --prefer-dist --no-interaction && cp composer.json composer.backup && composer require --dev dereuromark/composer-prefer-lowest && mv composer.backup composer.json"
     }
 }
