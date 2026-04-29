@@ -30,7 +30,13 @@ composer require php-collective/file-storage-image-processor
 ## Quick Example
 
 ```php
+use PhpCollective\Infrastructure\Storage\Processor\Image\Driver;
+use PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
+
+// Driver::Auto picks Imagick when the extension is loaded and falls
+// back to GD; use Driver::Gd or Driver::Imagick to choose explicitly.
+$imageProcessor = ImageProcessor::create(Driver::Auto, $fileStorage, $pathBuilder);
 
 $collection = ImageVariantCollection::create();
 

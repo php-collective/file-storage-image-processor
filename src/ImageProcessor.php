@@ -175,6 +175,49 @@ class ImageProcessor implements ProcessorInterface
     }
 
     /**
+     * Builds an ImageProcessor with the intervention/image manager wired
+     * up for you. Pass a `Driver` enum case (preferred — type-safe) or
+     * an equivalent string (`'gd'`, `'imagick'`, `'auto'`) for setups
+     * that read the driver name from config or env vars:
+     *
+     *     ImageProcessor::create(Driver::Imagick, $storage, $pathBuilder);
+     *     ImageProcessor::create(Driver::Auto, $storage, $pathBuilder);
+     *     ImageProcessor::create($config['driver'] ?? 'auto', $storage, $pathBuilder);
+     *
+     * String input is lower-cased and trimmed before resolution, and an
+     * unknown name throws `InvalidArgumentException` with the list of
+     * accepted values.
+     *
+     * Use the regular constructor when a custom-configured
+     * `ImageManager` is needed (e.g. with a non-default background
+     * color or font config).
+     *
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Driver|string $driver Driver enum case or equivalent string
+     * @param \PhpCollective\Infrastructure\Storage\FileStorageInterface $storageHandler File Storage Handler
+     * @param \PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilderInterface $pathBuilder Path Builder
+     * @param \PhpCollective\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface|null $urlBuilder Url Builder
+     *
+     * @return self
+     */
+    public static function create(
+        Driver|string $driver,
+        FileStorageInterface $storageHandler,
+        PathBuilderInterface $pathBuilder,
+        ?UrlBuilderInterface $urlBuilder = null,
+    ): self {
+        if (is_string($driver)) {
+            $driver = Driver::fromName($driver);
+        }
+
+        return new self(
+            $storageHandler,
+            $pathBuilder,
+            new ImageManager($driver->build()),
+            $urlBuilder,
+        );
+    }
+
+    /**
      * @param array<int, string> $mimeTypes Mime Type List
      *
      * @return $this

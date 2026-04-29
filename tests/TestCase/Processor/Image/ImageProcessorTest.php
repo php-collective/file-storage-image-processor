@@ -17,17 +17,21 @@ namespace PhpCollective\Test\TestCase\Processor\Image;
 use Imagick;
 use ImagickPixel;
 use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
 use Intervention\Image\ImageManager;
+use Intervention\Image\Interfaces\DriverInterface;
 use InvalidArgumentException;
 use League\Flysystem\FilesystemAdapter;
 use PhpCollective\Infrastructure\Storage\File;
 use PhpCollective\Infrastructure\Storage\FileFactory;
 use PhpCollective\Infrastructure\Storage\FileStorageInterface;
 use PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilder;
+use PhpCollective\Infrastructure\Storage\Processor\Image\Driver as ImageDriver;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
 use PhpCollective\Test\TestCase\TestCase;
+use ReflectionClass;
 
 /**
  * ImageProcessorTest
@@ -352,6 +356,130 @@ class ImageProcessorTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testCreateWithExplicitGdDriver(): void
+    {
+        $processor = ImageProcessor::create(
+            ImageDriver::Gd,
+            $this->createMock(FileStorageInterface::class),
+            new PathBuilder(),
+        );
+
+        $this->assertInstanceOf(GdDriver::class, $this->driverOf($processor));
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreateWithExplicitImagickDriver(): void
+    {
+        if (!extension_loaded('imagick')) {
+            $this->markTestSkipped('Imagick driver requires the Imagick PHP extension');
+        }
+
+        $processor = ImageProcessor::create(
+            ImageDriver::Imagick,
+            $this->createMock(FileStorageInterface::class),
+            new PathBuilder(),
+        );
+
+        $this->assertInstanceOf(ImagickDriver::class, $this->driverOf($processor));
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreateAutoPrefersImagickWhenAvailable(): void
+    {
+        if (!extension_loaded('imagick')) {
+            $this->markTestSkipped('Auto-detect prefers Imagick; requires the extension');
+        }
+
+        $processor = ImageProcessor::create(
+            ImageDriver::Auto,
+            $this->createMock(FileStorageInterface::class),
+            new PathBuilder(),
+        );
+
+        $this->assertInstanceOf(ImagickDriver::class, $this->driverOf($processor));
+    }
+
+    /**
+     * @return void
+     */
+    public function testDriverEnumStringValuesAreStable(): void
+    {
+        $this->assertSame('gd', ImageDriver::Gd->value);
+        $this->assertSame('imagick', ImageDriver::Imagick->value);
+        $this->assertSame('auto', ImageDriver::Auto->value);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreateAcceptsDriverNameString(): void
+    {
+        $processor = ImageProcessor::create(
+            'gd',
+            $this->createMock(FileStorageInterface::class),
+            new PathBuilder(),
+        );
+
+        $this->assertInstanceOf(GdDriver::class, $this->driverOf($processor));
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreateNormalisesDriverNameString(): void
+    {
+        $processor = ImageProcessor::create(
+            '  GD  ',
+            $this->createMock(FileStorageInterface::class),
+            new PathBuilder(),
+        );
+
+        $this->assertInstanceOf(GdDriver::class, $this->driverOf($processor));
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreateThrowsOnUnknownDriverName(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown image driver "vips"');
+
+        ImageProcessor::create(
+            'vips',
+            $this->createMock(FileStorageInterface::class),
+            new PathBuilder(),
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testDriverFromNameRoundTrip(): void
+    {
+        $this->assertSame(ImageDriver::Auto, ImageDriver::fromName('auto'));
+        $this->assertSame(ImageDriver::Gd, ImageDriver::fromName('GD'));
+        $this->assertSame(ImageDriver::Imagick, ImageDriver::fromName('  imagick  '));
+    }
+
+    /**
+     * @return void
+     */
+    public function testDriverFromNameThrowsOnUnknown(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown image driver "vips". Expected one of: auto, gd, imagick.');
+
+        ImageDriver::fromName('vips');
+    }
+
+    /**
      * @return \PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor
      */
     protected function buildProcessor(): ImageProcessor
@@ -363,6 +491,24 @@ class ImageProcessorTest extends TestCase
             new PathBuilder(),
             new ImageManager(new Driver()),
         );
+    }
+
+    /**
+     * Reads the protected `imageManager` property and returns its driver,
+     * so tests can assert which driver the factory selected without having
+     * to expose it via a public getter.
+     *
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor $processor Processor
+     *
+     * @return \Intervention\Image\Interfaces\DriverInterface
+     */
+    protected function driverOf(ImageProcessor $processor): DriverInterface
+    {
+        $reflection = new ReflectionClass($processor);
+        $property = $reflection->getProperty('imageManager');
+        $manager = $property->getValue($processor);
+
+        return $manager->driver;
     }
 
     /**
