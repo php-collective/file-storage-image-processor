@@ -147,9 +147,9 @@ class Operations
      *
      * @throws \PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOperationException
      *
-     * @return mixed
+     * @return never
      */
-    public function __call(string $name, array $arguments): mixed
+    public function __call(string $name, array $arguments): never
     {
         throw UnsupportedOperationException::withName($name);
     }

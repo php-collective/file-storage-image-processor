@@ -39,8 +39,12 @@ class ImageVariantCollection implements ImageVariantCollectionInterface
     }
 
     /**
-     * Workaround for php 8 because call_user_func_array will now behave this way:
-     * args keys will now be interpreted as parameter names, instead of being silently ignored.
+     * Picks only the entries from `$args` whose keys match a parameter
+     * name on `$object::$method()`. Necessary because PHP 8 treats array
+     * keys passed to `call_user_func_array()` as named arguments — any
+     * stale key (e.g. an entry left over from a previous schema, or
+     * from `toArray()` round-trip data like `direction` on a `flipHorizontal`
+     * call) would surface as a `TypeError`.
      *
      * @param object $object
      * @param string $method

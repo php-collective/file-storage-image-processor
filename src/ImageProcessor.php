@@ -214,13 +214,31 @@ class ImageProcessor implements ProcessorInterface
     }
 
     /**
-     * @param array<int, string> $mimeTypes Mime Type List
+     * Replaces the list of MIME types the processor will operate on.
+     * Files with any other MIME type are returned untouched by `process()`.
+     * Useful when the application wants to widen support to types the
+     * underlying intervention/image driver accepts but that aren't in
+     * the default allowlist, or to narrow it for security reasons.
+     *
+     * @param array<int, string> $mimeTypes MIME Type List, e.g. `['image/jpeg', 'image/png']`
+     *
+     * @throws \InvalidArgumentException When the list is empty or any entry is not a non-empty string
      *
      * @return $this
      */
-    protected function setMimeTypes(array $mimeTypes)
+    public function setMimeTypes(array $mimeTypes)
     {
-        $this->mimeTypes = $mimeTypes;
+        if ($mimeTypes === []) {
+            throw new InvalidArgumentException('MIME type list must not be empty');
+        }
+
+        foreach ($mimeTypes as $type) {
+            if ($type === '') {
+                throw new InvalidArgumentException('MIME type list must not contain empty strings');
+            }
+        }
+
+        $this->mimeTypes = array_values($mimeTypes);
 
         return $this;
     }
@@ -360,32 +378,41 @@ class ImageProcessor implements ProcessorInterface
     }
 
     /**
-     * Read the data from the files resource if (still) present,
-     * if not fetch it from the storage backend and write the data
-     * to the stream of the temp file
+     * Copies the source file's bytes into the given temp-file stream,
+     * preferring the in-memory resource on the file object when present
+     * and falling back to a fresh read from storage. Closes the temp
+     * stream regardless of outcome and throws when the copy fails so
+     * callers don't have to remember to inspect the return value.
      *
      * @param \PhpCollective\Infrastructure\Storage\FileInterface $file File
      * @param resource $tempFileStream Temp File Stream Resource
+     * @param string $tempFile Path to the destination temp file (used in the error message)
      *
-     * @return int|bool False on error
+     * @throws \PhpCollective\Infrastructure\Storage\Processor\Image\Exception\TempFileCreationFailedException
+     *
+     * @return void
      */
-    protected function copyOriginalFileData(FileInterface $file, $tempFileStream)
+    protected function copyOriginalFileData(FileInterface $file, $tempFileStream, string $tempFile): void
     {
         $stream = $file->resource();
-        $storage = $this->storageHandler->getStorage($file->storage());
-
         if ($stream === null) {
+            $storage = $this->storageHandler->getStorage($file->storage());
             $stream = $storage->readStream($file->path());
         } else {
             rewind($stream);
         }
-        $result = stream_copy_to_stream(
-            $stream,
-            $tempFileStream,
-        );
-        fclose($tempFileStream);
 
-        return $result;
+        try {
+            $result = stream_copy_to_stream($stream, $tempFileStream);
+        } finally {
+            fclose($tempFileStream);
+        }
+
+        if ($result === false) {
+            $this->safeUnlink($tempFile);
+
+            throw TempFileCreationFailedException::withFilename($tempFile);
+        }
     }
 
     /**
@@ -409,8 +436,6 @@ class ImageProcessor implements ProcessorInterface
 
     /**
      * @inheritDoc
-     *
-     * @throws \PhpCollective\Infrastructure\Storage\Processor\Image\Exception\TempFileCreationFailedException
      */
     public function process(FileInterface $file): FileInterface
     {
@@ -423,12 +448,7 @@ class ImageProcessor implements ProcessorInterface
         $tempFile = TemporaryFile::create();
         $tempFileStream = openFile($tempFile, 'wb+');
 
-        $result = $this->copyOriginalFileData($file, $tempFileStream);
-        if ($result === false) {
-            $this->safeUnlink($tempFile);
-
-            throw TempFileCreationFailedException::withFilename($tempFile);
-        }
+        $this->copyOriginalFileData($file, $tempFileStream, $tempFile);
 
         try {
             foreach ($file->variants() as $variant => $data) {
