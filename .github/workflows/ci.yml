@@ -25,7 +25,7 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: ${{ matrix.php-version }}
-        extensions: mbstring, json, fileinfo
+        extensions: mbstring, json, fileinfo, imagick
         tools: pecl
         coverage: pcov
 
@@ -77,7 +77,7 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: '8.3'
-        extensions: mbstring, json, fileinfo
+        extensions: mbstring, json, fileinfo, imagick
         coverage: none
         tools: pecl
 

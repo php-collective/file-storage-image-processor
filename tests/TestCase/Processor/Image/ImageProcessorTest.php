@@ -198,6 +198,75 @@ class ImageProcessorTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testConvertOperationAppendsVariantPathExtensionForExtensionlessSource(): void
+    {
+        $processor = $this->buildProcessor();
+
+        $file = FileFactory::fromDisk($this->getFixtureFile('titus.jpg'), 'local')
+            ->withUuid('914e1512-9153-4253-a81e-7ee2edc1d973')
+            ->withFilename('foobar')
+            ->addToCollection('avatar')
+            ->belongsToModel('User', '1');
+
+        $collection = ImageVariantCollection::create();
+        $collection
+            ->addNew('asWebp')
+            ->resize(100, 100)
+            ->convert('webp');
+
+        $file = $file->withVariants($collection->toArray());
+        $file = $processor->process($file);
+
+        $variants = $file->variants();
+        $this->assertArrayHasKey('asWebp', $variants);
+        $this->assertStringEndsWith('.webp', $variants['asWebp']['path']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testProcessAppliesRepeatedOperationsInOrder(): void
+    {
+        $applied = [];
+        $storage = $this->createMock(FilesystemAdapter::class);
+        $storage->method('writeStream')
+            ->willReturnCallback(static function (): void {
+            });
+
+        $fileStorage = $this->createMock(FileStorageInterface::class);
+        $fileStorage->method('getStorage')->willReturn($storage);
+
+        $processor = new ImageProcessor(
+            $fileStorage,
+            new PathBuilder(),
+            new ImageManager(new Driver()),
+        );
+
+        $file = FileFactory::fromDisk($this->getFixtureFile('titus.jpg'), 'local')
+            ->withUuid('aabb1100-2200-3300-4400-aabbccddeeff')
+            ->withFilename('foobar.jpg')
+            ->addToCollection('avatar')
+            ->belongsToModel('User', '1');
+
+        $collection = ImageVariantCollection::create();
+        $collection
+            ->addNew('thumbnail')
+            ->callback(function ($image) use (&$applied): void {
+                $applied[] = 'first';
+            })
+            ->callback(function ($image) use (&$applied): void {
+                $applied[] = 'second';
+            });
+
+        $file = $file->withVariants($collection->toArray());
+        $processor->process($file);
+
+        $this->assertSame(['first', 'second'], $applied);
+    }
+
+    /**
      * Builds a JPEG fixture with an embedded ICC profile and runs it through
      * the processor with profile preservation enabled. The encoded variant
      * bytes are captured from the storage adapter and re-decoded so the

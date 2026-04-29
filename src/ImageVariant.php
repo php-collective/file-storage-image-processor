@@ -57,7 +57,18 @@ class ImageVariant extends Variant
     protected string $name;
 
     /**
-     * @var array<string, array<string, mixed>>
+     * Single operations keep the legacy shape:
+     *
+     *     'resize' => ['width' => 300, 'height' => 300]
+     *
+     * Repeated operations of the same name are stored as a list:
+     *
+     *     'blur' => [
+     *         ['level' => 1],
+     *         ['level' => 9],
+     *     ]
+     *
+     * @var array<string, array<string, mixed>|array<int, array<string, mixed>>>
      */
     protected array $operations = [];
 
@@ -104,9 +115,40 @@ class ImageVariant extends Variant
      */
     public function add(Operation $operation)
     {
-        $this->operations[$operation->name()] = $operation->toArray();
+        $name = $operation->name();
+        $serialized = $operation->toArray();
+
+        if (!isset($this->operations[$name])) {
+            $this->operations[$name] = $serialized;
+
+            return $this;
+        }
+
+        $existing = $this->operations[$name];
+        if ($this->isOperationSequence($existing)) {
+            $existing[] = $serialized;
+            $this->operations[$name] = $existing;
+
+            return $this;
+        }
+
+        $this->operations[$name] = [$existing, $serialized];
 
         return $this;
+    }
+
+    /**
+     * @param array<string, mixed>|array<int, array<string, mixed>> $value Serialized operation entry
+     *
+     * @return bool
+     */
+    protected function isOperationSequence(array $value): bool
+    {
+        if ($value === []) {
+            return false;
+        }
+
+        return array_is_list($value) && is_array($value[0] ?? null);
     }
 
     /**
