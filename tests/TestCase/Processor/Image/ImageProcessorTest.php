@@ -416,6 +416,70 @@ class ImageProcessorTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testCreateAcceptsDriverNameString(): void
+    {
+        $processor = ImageProcessor::create(
+            'gd',
+            $this->createMock(FileStorageInterface::class),
+            new PathBuilder(),
+        );
+
+        $this->assertInstanceOf(GdDriver::class, $this->driverOf($processor));
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreateNormalisesDriverNameString(): void
+    {
+        $processor = ImageProcessor::create(
+            '  GD  ',
+            $this->createMock(FileStorageInterface::class),
+            new PathBuilder(),
+        );
+
+        $this->assertInstanceOf(GdDriver::class, $this->driverOf($processor));
+    }
+
+    /**
+     * @return void
+     */
+    public function testCreateThrowsOnUnknownDriverName(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown image driver "vips"');
+
+        ImageProcessor::create(
+            'vips',
+            $this->createMock(FileStorageInterface::class),
+            new PathBuilder(),
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testDriverFromNameRoundTrip(): void
+    {
+        $this->assertSame(ImageDriver::Auto, ImageDriver::fromName('auto'));
+        $this->assertSame(ImageDriver::Gd, ImageDriver::fromName('GD'));
+        $this->assertSame(ImageDriver::Imagick, ImageDriver::fromName('  imagick  '));
+    }
+
+    /**
+     * @return void
+     */
+    public function testDriverFromNameThrowsOnUnknown(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown image driver "vips". Expected one of: auto, gd, imagick.');
+
+        ImageDriver::fromName('vips');
+    }
+
+    /**
      * @return \PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor
      */
     protected function buildProcessor(): ImageProcessor

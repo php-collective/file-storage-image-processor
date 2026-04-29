@@ -13,6 +13,7 @@ namespace PhpCollective\Infrastructure\Storage\Processor\Image;
 use Intervention\Image\Drivers\Gd\Driver as InterventionGdDriver;
 use Intervention\Image\Drivers\Imagick\Driver as InterventionImagickDriver;
 use Intervention\Image\Interfaces\DriverInterface;
+use InvalidArgumentException;
 use RuntimeException;
 
 /**
@@ -41,6 +42,34 @@ enum Driver: string
      * higher quality output.
      */
     case Imagick = 'imagick';
+
+    /**
+     * Resolves a driver name (e.g. from a config array) to the matching
+     * enum case. Lower-cases and trims the input so values like `'GD'`
+     * or `' imagick '` resolve correctly. Throws when the input does
+     * not match any known case.
+     *
+     * @param string $name Driver name (`'gd'`, `'imagick'`, `'auto'`)
+     *
+     * @throws \InvalidArgumentException When the name does not match any case
+     *
+     * @return self
+     */
+    public static function fromName(string $name): self
+    {
+        $case = self::tryFrom(strtolower(trim($name)));
+        if ($case !== null) {
+            return $case;
+        }
+
+        $valid = implode(', ', array_map(static fn (self $c): string => $c->value, self::cases()));
+
+        throw new InvalidArgumentException(sprintf(
+            'Unknown image driver "%s". Expected one of: %s.',
+            $name,
+            $valid,
+        ));
+    }
 
     /**
      * Resolves this enum case to a concrete intervention/image driver

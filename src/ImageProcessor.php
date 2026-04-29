@@ -176,17 +176,23 @@ class ImageProcessor implements ProcessorInterface
 
     /**
      * Builds an ImageProcessor with the intervention/image manager wired
-     * up for you. Pass a `Driver` enum case to pick the driver:
+     * up for you. Pass a `Driver` enum case (preferred — type-safe) or
+     * an equivalent string (`'gd'`, `'imagick'`, `'auto'`) for setups
+     * that read the driver name from config or env vars:
      *
      *     ImageProcessor::create(Driver::Imagick, $storage, $pathBuilder);
      *     ImageProcessor::create(Driver::Auto, $storage, $pathBuilder);
+     *     ImageProcessor::create($config['driver'] ?? 'auto', $storage, $pathBuilder);
      *
-     * Useful when the calling app does not need direct access to the
-     * `ImageManager` instance — most applications fit this case. Use the
-     * regular constructor when a custom-configured `ImageManager` is
-     * needed (e.g. with a non-default background color or font config).
+     * String input is lower-cased and trimmed before resolution, and an
+     * unknown name throws `InvalidArgumentException` with the list of
+     * accepted values.
      *
-     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Driver $driver Driver enum case
+     * Use the regular constructor when a custom-configured
+     * `ImageManager` is needed (e.g. with a non-default background
+     * color or font config).
+     *
+     * @param \PhpCollective\Infrastructure\Storage\Processor\Image\Driver|string $driver Driver enum case or equivalent string
      * @param \PhpCollective\Infrastructure\Storage\FileStorageInterface $storageHandler File Storage Handler
      * @param \PhpCollective\Infrastructure\Storage\PathBuilder\PathBuilderInterface $pathBuilder Path Builder
      * @param \PhpCollective\Infrastructure\Storage\UrlBuilder\UrlBuilderInterface|null $urlBuilder Url Builder
@@ -194,11 +200,15 @@ class ImageProcessor implements ProcessorInterface
      * @return self
      */
     public static function create(
-        Driver $driver,
+        Driver|string $driver,
         FileStorageInterface $storageHandler,
         PathBuilderInterface $pathBuilder,
         ?UrlBuilderInterface $urlBuilder = null,
     ): self {
+        if (is_string($driver)) {
+            $driver = Driver::fromName($driver);
+        }
+
         return new self(
             $storageHandler,
             $pathBuilder,
