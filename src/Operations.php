@@ -185,7 +185,7 @@ class Operations
      */
     public function flipHorizontal(): void
     {
-        $this->flip(['direction' => 'h']);
+        $this->image->flip(Direction::HORIZONTAL);
     }
 
     /**
@@ -195,7 +195,7 @@ class Operations
      */
     public function flipVertical(): void
     {
-        $this->flip(['direction' => 'v']);
+        $this->image->flip(Direction::VERTICAL);
     }
 
     /**

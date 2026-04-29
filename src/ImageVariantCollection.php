@@ -67,6 +67,8 @@ class ImageVariantCollection implements ImageVariantCollectionInterface
     /**
      * @param array<string, array<string, mixed>> $variants Variant array structure
      *
+     * @throws \PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOperationException
+     *
      * @return self
      */
     public static function fromArray(array $variants)
@@ -85,7 +87,7 @@ class ImageVariantCollection implements ImageVariantCollectionInterface
 
             foreach ($data['operations'] as $method => $args) {
                 if (!method_exists($variant, $method)) {
-                    UnsupportedOperationException::withName($method);
+                    throw UnsupportedOperationException::withName($method);
                 }
 
                 /** @var array<mixed> $parameters */
