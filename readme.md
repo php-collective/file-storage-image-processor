@@ -1,7 +1,12 @@
 # File Storage Image Processing
 
-[![CI](https://github.com/php-collective/file-storage-image-processor/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/php-collective/file-storage-image-processor/actions/workflows/ci.yml)
-[![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/php-collective/file-storage-image-processor/ci.yml?branch=master&style=flat-square)](https://github.com/php-collective/file-storage-image-processor/actions)
+[![Coverage](https://codecov.io/gh/php-collective/file-storage-image-processor/branch/master/graph/badge.svg)](https://codecov.io/gh/php-collective/file-storage-image-processor)
+[![Latest Stable Version](https://img.shields.io/packagist/v/php-collective/file-storage-image-processor?style=flat-square)](https://packagist.org/packages/php-collective/file-storage-image-processor)
+[![Total Downloads](https://img.shields.io/packagist/dt/php-collective/file-storage-image-processor?style=flat-square)](https://packagist.org/packages/php-collective/file-storage-image-processor)
+[![PHPStan](https://img.shields.io/badge/PHPStan-level%208-brightgreen.svg?style=flat-square)](https://phpstan.org/)
+[![PHP Version](https://img.shields.io/badge/php-%3E%3D8.3-8892BF.svg?style=flat-square)](https://php.net)
+[![Software License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](LICENSE)
 
 Image Processing for the [File Storage Library](https://github.com/php-collective/file-storage).
 
