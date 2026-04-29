@@ -11,6 +11,7 @@
 namespace PhpCollective\Infrastructure\Storage\Processor\Image\Operation;
 
 use Closure;
+use InvalidArgumentException;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Exception\UnsupportedOperationException;
 use PhpCollective\Infrastructure\Storage\Processor\Image\FlipDirection;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Position;
@@ -122,7 +123,7 @@ class OperationRegistry
             ->register('convert', static fn (array $a): Operation => new Convert((string)$a['format']))
             ->register('callback', static function (array $a): Operation {
                 if (!isset($a['callback']) || !$a['callback'] instanceof Closure) {
-                    throw new \InvalidArgumentException('Missing or non-Closure callback argument');
+                    throw new InvalidArgumentException('Missing or non-Closure callback argument');
                 }
 
                 return new Callback($a['callback']);

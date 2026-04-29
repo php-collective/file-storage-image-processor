@@ -921,8 +921,6 @@ class Image implements ImageInterface
 
     /**
      * Clone image
-     *
-     * @return void
      */
     public function __clone(): void
     {

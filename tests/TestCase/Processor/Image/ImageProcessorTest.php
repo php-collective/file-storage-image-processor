@@ -31,12 +31,13 @@ use PhpCollective\Infrastructure\Storage\Processor\Image\Driver as ImageDriver;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageProcessor;
 use PhpCollective\Infrastructure\Storage\Processor\Image\ImageVariantCollection;
 use PhpCollective\Test\TestCase\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use ReflectionClass;
 
 /**
  * ImageProcessorTest
  */
-#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
+#[AllowMockObjectsWithoutExpectations]
 class ImageProcessorTest extends TestCase
 {
     /**

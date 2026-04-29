@@ -40,6 +40,7 @@ use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Trim;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Operation\Widen;
 use PhpCollective\Infrastructure\Storage\Processor\Image\Position;
 use PhpCollective\Test\TestCase\TestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
 /**
  * OperationTest
@@ -47,7 +48,7 @@ use PhpCollective\Test\TestCase\TestCase;
  * Verifies each Operation class forwards its constructor parameters
  * to the right intervention/image method when applied to a context.
  */
-#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
+#[AllowMockObjectsWithoutExpectations]
 class OperationTest extends TestCase
 {
     /**
